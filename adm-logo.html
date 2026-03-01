@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>ADMLogo with JS Canvas</title>
+	<style>
+		html {
+			background-color: white;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+
+		canvas {
+			background-color: black;
+		}
+	</style>
+</head>
+
+<body>
+	<canvas id="my-canvas" width="500" height="500"></canvas>
+	<script>
+		var canvas = document.getElementById("my-canvas");
+		var ctx = canvas.getContext("2d");
+
+		ctx.beginPath();
+		ctx.strokeStyle = "white";
+		ctx.lineWidth = 15;
+		ctx.moveTo(50, 150);
+		ctx.lineTo(100, 200);
+		ctx.moveTo(50, 250);
+		ctx.lineTo(100, 200);
+
+		ctx.moveTo(150, 200);
+		ctx.lineTo(200, 200);
+
+		ctx.moveTo(150, 250);
+		ctx.lineTo(175, 130);
+		ctx.moveTo(175, 130);
+		ctx.lineTo(200, 250);
+
+		ctx.moveTo(250, 130);
+		ctx.lineTo(250, 250);
+		ctx.arc(250, 190, 60, -Math.PI/2, Math.PI/2, false);
+
+		ctx.moveTo(350,250);
+		ctx.lineTo(350, 130);
+		ctx.moveTo(350, 130);
+		ctx.lineTo(375, 190);
+		ctx.moveTo(375, 190);
+		ctx.lineTo(400, 130);
+		ctx.moveTo(400, 130);
+		ctx.lineTo(400, 250);
+
+		ctx.moveTo(150, 350);
+		ctx.lineTo(100, 350);
+		ctx.lineTo(100, 375);
+		ctx.lineTo(140, 375);
+		ctx.lineTo(140, 400);
+		ctx.lineTo(90, 400);
+
+		ctx.moveTo(200, 300);
+		ctx.lineTo(200, 400);
+		ctx.lineTo(225, 400);
+		ctx.moveTo(175, 330);
+		ctx.lineTo(225, 330);
+
+		ctx.moveTo(250, 350);
+		ctx.lineTo(250, 400);
+		
+		ctx.stroke();
+
+	</script>
+</body>
+
+</html>
