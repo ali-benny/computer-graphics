@@ -211,7 +211,7 @@ function transform(reset = false) {
 		translateX = translateX == 0 ? 0 : -translateX;
 		translateY = translateY == 0 ? 0 : -translateY;
 		rotateAngle = rotateAngle == 0 ? 0 : -rotateAngle;
-		transformations = transformations.map((matrix) => math.inv(matrix));
+		transformations = transformations.map((matrix) => math.inv(matrix)).reverse();
 	}
 	// Applica le trasformazioni ai punti di controllo
 	for (let i = 0; i < n; i++) {
@@ -222,18 +222,6 @@ function transform(reset = false) {
 			xt[i] = newX;
 			yt[i] = newY;
 		}
-	}
-	if (reset) {
-		scaleX = 1;
-		scaleY = 1;
-		translateX = 0;
-		translateY = 0;
-		rotateAngle = 0;
-		document.getElementById('scaleX').value = scaleX;
-		document.getElementById('scaleY').value = scaleY;
-		document.getElementById('translateX').value = translateX;
-		document.getElementById('translateY').value = translateY;
-		document.getElementById('rotateAngle').value = rotateAngle;
 	}
 	draw();
 }

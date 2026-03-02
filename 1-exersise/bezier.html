@@ -20,6 +20,34 @@
             gap: 2%;
         }
     </style>
+    <script>
+        function cleanInputs() {
+            document.getElementById("scaleX").value = 1;
+            document.getElementById("scaleY").value = 1;
+            document.getElementById("translateX").value = 0;
+            document.getElementById("translateY").value = 0;
+            document.getElementById("rotateAngle").value = 0;
+        }
+
+        function random(min, max, step){
+            return (Math.floor(Math.random() * ((max - min + 1) / step + 1)) + min / step) * step;
+        }
+
+    /**
+     * this is a "random" number generator 
+     * 
+     * try to create tranformations that can be finded by the user
+    */
+        function randomTransformations() {
+            document.getElementById('scaleX').value = random(1, 3, 0.1);
+            document.getElementById('scaleY').value = random(1, 3, 0.1);
+            document.getElementById('translateX').value = random(20, 80, 5);
+            document.getElementById('translateY').value = random(20, 80, 5);
+            document.getElementById('rotateAngle').value = random(10, 90, 5);
+        }
+
+
+    </script>
 </head>
 
 <!-- applicare trasformazioni geometriche
@@ -47,8 +75,9 @@ viewport (ingrandire la curva a piena viewport) -->
         <div style="display: flex; width: max-content;">
             <input type="Button" value=" Apply Transformations " onclick="transform()"
                 style="background-color: lightgreen;">
-            <button id="reset-transformations" style="background-color: lightgreen;" onclick="transform(true)"> Undo and
-                Clean </button>
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="transform(true)"> Undo </button>
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="cleanInputs()"> Clean Inputs </button>
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="randomTransformations()"> Random Transformations </button>
         </div>
     </div>
     <br>
