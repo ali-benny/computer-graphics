@@ -31,13 +31,187 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
+      - name: Generate directory indexes
+        run: |
+          #!/bin/bash
+          
+          # Function to generate index.html for a directory
+          generate_index() {
+            local dir="$1"
+            local index_file="$dir/index.html"
+            local rel_path="${dir#./}"
+            
+            echo "Generating index for: $rel_path"
+            
+            # Start HTML
+            cat > "$index_file" << 'EOF'
+          <!DOCTYPE html>
+          <html lang="it">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          EOF
+            
+            if [ "$rel_path" = "." ]; then
+              echo "    <title>Computer Graphics - File Browser</title>" >> "$index_file"
+            else
+              echo "    <title>$rel_path</title>" >> "$index_file"
+            fi
+            
+            cat >> "$index_file" << 'EOF'
+              <style>
+                  body {
+                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+                      max-width: 1000px;
+                      margin: 0 auto;
+                      padding: 40px 20px;
+                      background: #f6f8fa;
+                  }
+                  .container {
+                      background: white;
+                      border-radius: 8px;
+                      padding: 30px;
+                      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  }
+                  h1 {
+                      color: #24292e;
+                      border-bottom: 2px solid #e1e4e8;
+                      padding-bottom: 10px;
+                      margin-top: 0;
+                  }
+                  .breadcrumb {
+                      margin-bottom: 20px;
+                      color: #586069;
+                  }
+                  .breadcrumb a {
+                      color: #0366d6;
+                      text-decoration: none;
+                  }
+                  .breadcrumb a:hover {
+                      text-decoration: underline;
+                  }
+                  ul {
+                      list-style: none;
+                      padding: 0;
+                      margin: 0;
+                  }
+                  li {
+                      border-bottom: 1px solid #e1e4e8;
+                      padding: 12px 0;
+                  }
+                  li:last-child {
+                      border-bottom: none;
+                  }
+                  a {
+                      color: #0366d6;
+                      text-decoration: none;
+                      display: flex;
+                      align-items: center;
+                      gap: 8px;
+                  }
+                  a:hover {
+                      text-decoration: underline;
+                  }
+                  .icon {
+                      font-size: 20px;
+                      width: 24px;
+                  }
+                  .folder { color: #79b8ff; }
+                  .html-file { color: #f97583; }
+                  .js-file { color: #f1e05a; }
+                  .pdf-file { color: #b31d28; }
+                  .img-file { color: #a371f7; }
+                  .other-file { color: #6a737d; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+          EOF
+            
+            # Breadcrumb navigation
+            if [ "$rel_path" != "." ]; then
+              echo "        <div class=\"breadcrumb\">" >> "$index_file"
+              echo "          <a href=\"/\">🏠 Home</a> / $rel_path" >> "$index_file"
+              echo "        </div>" >> "$index_file"
+            fi
+            
+            # Title
+            if [ "$rel_path" = "." ]; then
+              echo "        <h1>📁 Computer Graphics - File Browser</h1>" >> "$index_file"
+            else
+              echo "        <h1>📁 $rel_path</h1>" >> "$index_file"
+            fi
+            
+            # Parent directory link (if not root)
+            if [ "$rel_path" != "." ]; then
+              echo "        <ul>" >> "$index_file"
+              echo "          <li><a href=\"../\"><span class=\"icon folder\">📁</span>..</a></li>" >> "$index_file"
+            else
+              echo "        <ul>" >> "$index_file"
+            fi
+            
+            # List directories first
+            for item in "$dir"/*; do
+              [ -e "$item" ] || continue
+              [ "$(basename "$item")" = "index.html" ] && continue
+              
+              if [ -d "$item" ]; then
+                local name=$(basename "$item")
+                echo "          <li><a href=\"$name/\"><span class=\"icon folder\">📁</span>$name/</a></li>" >> "$index_file"
+              fi
+            done
+            
+            # Then list files
+            for item in "$dir"/*; do
+              [ -e "$item" ] || continue
+              [ "$(basename "$item")" = "index.html" ] && continue
+              
+              if [ -f "$item" ]; then
+                local name=$(basename "$item")
+                local icon="📄"
+                local class="other-file"
+                
+                case "$name" in
+                  *.html) icon="🌐"; class="html-file" ;; 
+                  *.js) icon="⚡"; class="js-file" ;;
+                  *.pdf) icon="📕"; class="pdf-file" ;;
+                  *.png|*.jpg|*.jpeg|*.gif) icon="🖼️"; class="img-file" ;;
+                esac
+                
+                echo "          <li><a href=\"$name\"><span class=\"icon $class\">$icon</span>$name</a></li>" >> "$index_file"
+              fi
+            done
+            
+            # Close HTML
+            cat >> "$index_file" << 'EOF'
+                </ul>
+              </div>
+          </body>
+          </html>
+          EOF
+          }
+          
+          # Generate index for root
+          generate_index "." 
+          
+          # Generate index for all subdirectories
+          find . -type d -not -path '*/.*' | while read dir; do
+            [ "$dir" = "." ] && continue
+            generate_index "$dir"
+          done
+          
+          echo "✅ Directory indexes generated!"
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           # Upload entire repository
           path: '.'
+      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
