@@ -129,13 +129,6 @@ jobs:
               <div class="container">
           EOF
             
-            # Breadcrumb navigation
-            if [ "$rel_path" != "." ]; then
-              echo "        <div class=\"breadcrumb\">" >> "$index_file"
-              echo "          <a href=\"/computer-graphics/\">📁 Computer Graphics</a> / $rel_path" >> "$index_file"
-              echo "        </div>" >> "$index_file"
-            fi
-            
             # Title
             if [ "$rel_path" = "." ]; then
               echo "        <h1>📁 Computer Graphics - File Browser</h1>" >> "$index_file"
