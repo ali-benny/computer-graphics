@@ -132,7 +132,7 @@ jobs:
             # Breadcrumb navigation
             if [ "$rel_path" != "." ]; then
               echo "        <div class=\"breadcrumb\">" >> "$index_file"
-              echo "          <a href=\"/\">🏠 Home</a> / $rel_path" >> "$index_file"
+              echo "          <a href=\"computer-graphics/\">🏠 Home</a> / $rel_path" >> "$index_file"
               echo "        </div>" >> "$index_file"
             fi
             
