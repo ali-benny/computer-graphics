@@ -45,7 +45,7 @@ void main() {
     const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
     // Load fragment shader source code
     gl.shaderSource(fragmentShader, fsGLSL);
-    // Compile the fragmentt shader 
+    // Compile the fragment shader 
     gl.compileShader(fragmentShader);
     if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS)) {
       throw new Error(gl.getShaderInfoLog(fragmentShader))

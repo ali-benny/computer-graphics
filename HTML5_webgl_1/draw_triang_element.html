@@ -9,8 +9,8 @@
 		var gl = canvas.getContext('experimental-webgl');
 
 /* Step2: Define the geometry and store it in buffer objects */
-		var vertices =[ -0.5,-0.5,-1.0, -0.25,0.5,-1.0, 0.0,-0.5,-1.0 ]; 
-		var indices =[0,1,2];    		
+		var vertices =[ -0.5,-0.5,-1.0, -0.25,0.5,-1.0, 0.0,-0.5,-1.0 ]; 	//: 3 vertici a 3 coordinate
+		var indices =[0,1,2];    //:= sono attributi e vertici	
 
 // Create two new buffer object
 		var vertex_buffer = gl.createBuffer();
@@ -63,19 +63,17 @@
 		gl.useProgram(shaderProgram);
 
 /* Step 4: Associate the shader programs to buffer objects */
-
 //Bind vertex buffer object 
 		gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buffer);
 //Get the attribute location
 		var coord = gl.getAttribLocation(shaderProgram, "coordinates");
 //point an attribute to the currently bound VBO 
-		gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
+		gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);	//? vertici o indici? con gli indici non devo replicare i
 //Enable the attribute 
-		gl.enableVertexAttribArray(coord);
+		gl.enableVertexAttribArray(coord);	//: farà riferimento agli indici in automatico
 
 /* Step5: Drawing the required object (triangle) */
-
 // Clear the canvas
 		gl.clearColor(0.5, 0.5, .5, 1);
 // Clear the color buffer bit 
@@ -83,7 +81,7 @@
 // Set the view port 
 //		gl.viewport(0,0,canvas.width,canvas.height);
 // Draw the triangle 
-		gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+		gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);	//: indices.length = 3, gl.UNSIGNED_SHORT = type of indices, 0 = offset in the element array buffer
 	</script>
    </body>
 </html>
