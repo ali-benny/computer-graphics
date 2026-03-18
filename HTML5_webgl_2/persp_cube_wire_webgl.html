@@ -52,7 +52,7 @@
     var vertices = [
       -1, -1, -1, 1, 1, -1, -1, 1, 1, 1, -1, 1, -1, 1, -1, 1, -1, -1, 1, 1, 1, -1, 1, 1, 1, 1, 1, 1, -1, 1, 1, 1];
     var indices = [
-      0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7];
+      0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7, 4,6];
 
     // Create vertex buffer 
     var vertex_buffer = gl.createBuffer();
@@ -109,7 +109,8 @@
 
     /*==================== MATRIX ====================== */
     function get_projection1(angle, a) {
-      var ang = Math.tan(0.5 * angle * Math.PI / 180);//angle*.5 
+      // var ang = Math.tan(0.5 * angle * Math.PI / 180);//angle*.5 
+      var ang = Math.tan(0.5 * angle);
       return [
         1 / (a * ang), 0, 0, 0,
         0, 1 / ang, 0, 0,
@@ -118,7 +119,8 @@
     }
 
     function get_projection2(angle, a, zMin, zMax) {
-      var ang = Math.tan(0.5 * angle * Math.PI / 180);//angle*.5 
+      // var ang = Math.tan(0.5 * angle * Math.PI / 180);//angle*.5 
+      var ang = Math.tan(0.5 * angle);
       return [
         1 / (a * ang), 0, 0, 0,
         0, 1 / ang, 0, 0,
@@ -135,13 +137,13 @@
 
       if (changeP) {
         // Compute the projection matrix with near and far plane
-        proj_matrix = m4.perspective(alpha, canvas.width / canvas.height, 0.5, 10);
+        // proj_matrix = m4.perspective(alpha, canvas.width / canvas.height, 0.5, 10);
 
         //matrice di proiezione senza near e far palne
-        //var proj_matrix=get_projection1(alpha, canvas.width/canvas.height);
+        proj_matrix=get_projection1(alpha, canvas.width/canvas.height);
 
         //matrice di proiezione con near e far plane
-        //var proj_matrix=get_projection2(alpha, canvas.width/canvas.height, 0.5, 10);
+        //proj_matrix=get_projection2(alpha, canvas.width/canvas.height, 0.5, 10);
         changeP = 0;
       }
 
@@ -156,10 +158,8 @@
         var target = [0, 0, 0];
         // Compute the camera's matrix using look at.
         view_matrix = m4.lookAt(cameraPosition, target, up);
-        //console.log(view_matrix);
         // Make a view matrix from the camera matrix.
         view_matrix = m4.inverse(view_matrix);
-        //console.log(view_matrix);
         changeV = 0;
       }
 
