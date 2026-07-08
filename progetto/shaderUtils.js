@@ -98,6 +98,46 @@ void main() {
 }
 `;
 
+export const SKY_VERTEX_SHADER = `
+attribute vec3 aPosition;
+
+uniform mat4 uProjection;
+uniform mat4 uView;
+uniform mat4 uModelMatrix;
+
+varying vec3 vViewDir;
+
+void main() {
+    vViewDir = aPosition; // Salva la direzione locale del vertice
+    
+    // Calcola la posizione finale senza alterazioni di curvatura
+    gl_Position = uProjection * uView * uModelMatrix * vec4(aPosition, 1.0);
+}
+`;
+
+export const SKY_FRAGMENT_SHADER = `
+precision mediump float;
+
+varying vec3 vViewDir;
+
+uniform vec3 uColorHorizon;
+uniform vec3 uColorZenith;
+
+void main() {
+    // Normalizza il vettore perché l'interpolazione dei varying ne altera la lunghezza
+    vec3 viewDir = normalize(vViewDir);
+    
+    // Calcola un fattore basato sull'altezza (clampato tra 0 e 1 per evitare artefatti sotto l'orizzonte)
+    float factor = clamp(viewDir.y, 0.0, 1.0);
+    float gradientFactor = pow(factor, 2.0);
+    
+    // Interpolazione lineare per creare il gradiente procedurale
+    vec3 finalSkyColor = mix(uColorHorizon, uColorZenith, gradientFactor);
+    
+    gl_FragColor = vec4(finalSkyColor, 1.0);
+}
+`;
+
 export function createShader(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);

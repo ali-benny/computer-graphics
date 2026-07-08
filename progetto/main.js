@@ -145,7 +145,7 @@ function createControlPanel(state, camera, canvas) {
     <section class="hud-panel">
       <div class="hud-title">Animal Crossing Village</div>
       <div class="hud-row"><label><input id="lightToggle" type="checkbox" checked /> Luce orbitante</label></div>
-      <div class="hud-row"><label><input id="fogToggle" type="checkbox" /> Advanced: fog</label></div>
+      <div class="hud-row"><label><input id="fogToggle" type="checkbox" checked/> Advanced: fog</label></div>
       <div class="hud-row"><span>Fog near</span><input id="fogNearRange" type="range" min="4" max="20" step="1" value="10" /></div>
       <div class="hud-row"><span>Fog far</span><input id="fogFarRange" type="range" min="16" max="50" step="1" value="30" /></div>
       <div class="hud-help" id="playerInfo">Player: 0.00, 0.00 | Camera: 0.00, 0.00, 0.00</div>
@@ -492,6 +492,7 @@ async function main() {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
 		lastTime = nowMs;
 
+		// 1. Logica di movimento e fisica
 		const cameraForward = [
 			Math.sin(camera.yaw) * Math.cos(camera.pitch),
 			Math.sin(camera.pitch),
@@ -499,13 +500,11 @@ async function main() {
 		];
 		const cameraRight = [Math.cos(camera.yaw), 0, Math.sin(camera.yaw)];
 
-		// Build collider list (static + instanced trees) and update player with camera directions for relative movement
 		const colliders = STATIC_COLLIDERS.concat(treeColliders);
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
-
 		camera.updatePosition(deltaTime);
 
-		// Update player GameObject modelMatrix from PlayerController state
+		// 2. Aggiorna le matrici dei personaggi
 		playerGO.setModelMatrix(
 			buildModelMatrix(char.bounds, {
 				scaleMul: 0.72,
@@ -520,111 +519,26 @@ async function main() {
 		}
 		const lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
 
-		// Bind global uniforms (projection, view, fog, curvature, lights) and render each object by calling
-		// its .render() when available (GameObject) or falling back to the old path for plain objects.
-		const gl = renderer.gl;
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.useProgram(renderer.skyProgram);
-
-		const projection = mat4Perspective(
-			Math.PI / 4,
-			renderer.canvas.width / renderer.canvas.height,
-			0.2,
-			140
-		);
-		const view = camera.getViewMatrix();
-
-
-		// A. Disattivi la scrittura della profondità: la skybox sarà lo "sfondo"
-		gl.depthMask(false);
-
-		// B. Disattivi momentaneamente il culling per vedere il cubo dall'interno
-		gl.disable(gl.CULL_FACE);
-
-		// C. (Opzionale per ora) Spegni la curvatura per il cielo!
-		// Altrimenti il cielo si piegherà come il terreno. Passa 0.0 temporaneamente:
-		gl.uniform1f(renderer.uCurvatureStrength, 0.0);
-
-		// D. Imposti la modelMatrix specifica del cielo (es. centrata sul player o fissa)
-		gl.uniformMatrix4fv(renderer.uModelMatrix, false, new Float32Array(mat4Identity()));
-		gl.uniform3f(renderer.uBaseColor, 0.5, 0.7, 1.0); // Il colore base azzurro
-		gl.uniform1i(renderer.uUseTexture, 0); // Niente texture per ora, solo colore dello shader
-
-		// E. Disegni effettivamente la mesh
-		setMeshAttributes(gl, renderer.program, skyboxMesh);
-		drawMesh(gl, skyboxMesh);
-
-		// F. RIPRISTINI GLI STATI PER IL RESTO DEL GIOCO
-		gl.depthMask(true); // Gli alberi e la casa DEVONO scrivere nel depth buffer!
-		gl.enable(gl.CULL_FACE); // Riattivi il culling se lo usi normalmente
-
-    
-		gl.useProgram(renderer.program);
-		gl.uniform1f(renderer.uCurvatureStrength, 0.0048); // Ripristini la curvatura per il terreno/alberi
-
-		gl.uniformMatrix4fv(renderer.uProjection, false, new Float32Array(projection));
-		gl.uniformMatrix4fv(renderer.uView, false, new Float32Array(view));
-		gl.uniform3f(renderer.uLightDir, lightDir[0], lightDir[1], lightDir[2]);
-		gl.uniform3f(
-			renderer.uCameraPos,
-			camera.position[0],
-			camera.position[1],
-			camera.position[2]
-		);
-		gl.uniform1i(renderer.uEnableFog, state.enableFog);
-		gl.uniform3f(renderer.uFogColor, 0.32, 0.54, 0.27); // TODO: change fog color
-		gl.uniform1f(renderer.uFogNear, state.fogNear);
-		gl.uniform1f(renderer.uFogFar, Math.max(state.fogNear + 1, state.fogFar));
-		gl.uniform1f(renderer.uCurvatureStrength, 0.0048);
-		gl.uniform2f(renderer.uCurvatureOrigin, player.position[0], player.position[2]);
-
-		// Draw instanced trees first
-		if (tree && tree.mesh) {
-			// ensure object model is identity for instanced draws
-			gl.uniformMatrix4fv(renderer.uModelMatrix, false, new Float32Array(mat4Identity()));
-			gl.uniform1i(renderer.uUseInstancing, 1);
-			gl.uniform1i(renderer.uUseTexture, tree.texture ? 1 : 0);
-			if (tree.texture) {
-				gl.activeTexture(gl.TEXTURE0);
-				gl.bindTexture(gl.TEXTURE_2D, tree.texture);
-				gl.uniform1i(renderer.uTexture, 0);
+		renderer.render(camera, objects, skyboxMesh, {
+			lightDir: lightDir,
+			enableFog: state.enableFog,
+			fogColor: [0.7, 0.85, 0.95],
+			fogNear: state.fogNear,
+			fogFar: state.fogFar,
+			curvatureStrength: 0.0048,
+			curvatureOrigin: [player.position[0], player.position[2]],
+			treeData: {
+				mesh: tree.mesh,
+				texture: tree.texture,
+				matrices: treeMatrices,
+				count: TREE_COUNT
 			}
-			gl.uniform1i(renderer.uInvertUVY, true);
-			gl.uniform3f(renderer.uBaseColor, 1.0, 1.0, 1.0);
-			drawMeshInstanced(gl, renderer.program, tree.mesh, treeMatrices, TREE_COUNT);
-			gl.uniform1i(renderer.uUseInstancing, 0);
-		}
+		});
 
-		for (const obj of objects) {
-			if (typeof obj.render === 'function') {
-				obj.render(gl, renderer.program);
-			} else {
-				// legacy plain-object path
-				gl.uniformMatrix4fv(
-					renderer.uModelMatrix,
-					false,
-					new Float32Array(obj.modelMatrix)
-				);
-				gl.uniform3f(renderer.uBaseColor, obj.color[0], obj.color[1], obj.color[2]);
-
-				const useTexture = obj.texture ? true : false;
-				gl.uniform1i(renderer.uUseTexture, useTexture);
-				gl.uniform1i(renderer.uInvertUVY, obj.invertUVY ? true : false);
-
-				if (obj.texture) {
-					gl.activeTexture(gl.TEXTURE0);
-					gl.bindTexture(gl.TEXTURE_2D, obj.texture);
-					gl.uniform1i(renderer.uTexture, 0);
-				}
-
-				setMeshAttributes(gl, renderer.program, obj.mesh);
-				drawMesh(gl, obj.mesh);
-			}
-		}
-
+		// 4. Aggiorna l'interfaccia bidimensionale
 		hud.updateInfo(player, camera);
-		// update HUD canvas (minimap)
 		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders);
+
 		requestAnimationFrame(animate);
 	}
 
