@@ -33,8 +33,8 @@ void main() {
 
   // Curvatura cilindrica
   vec2 deltaXZ = worldPos.xz - uCurvatureOrigin;
-  float dist = length(deltaXZ);
-  worldPos.y -= dist * dist * uCurvatureStrength;
+  float distZ = worldPos.z - uCurvatureOrigin.y;
+  worldPos.y -= distZ * distZ * uCurvatureStrength;
 
   mat3 normalMat = mat3(model);
   vWorldPos = worldPos.xyz;
@@ -98,241 +98,268 @@ void main() {
 }
 `;
 
+// attribute vec4 aPosition;
+
+// uniform mat4 uProjection;
+// uniform mat4 uView;
+// uniform mat4 uModelMatrix;
+
+// varying vec3 vViewDir;
+
+// void main() {
+//     // Calcoliamo la posizione globale del vertice del cubo dello skybox
+//     vec4 worldPos = uModelMatrix * vec4(aPosition, 1.0);
+
+//     // La direzione dal centro dello skybox (dove si trova la camera) verso il vertice
+//     vViewDir = worldPos.xyz - vec3(uModelMatrix[3][0], uModelMatrix[3][1], uModelMatrix[3][2]);
+
+//     gl_Position = uProjection * uView * worldPos;
+// }
 export const SKY_VERTEX_SHADER = `
-attribute vec3 aPosition;
-
-uniform mat4 uProjection;
-uniform mat4 uView;
-uniform mat4 uModelMatrix;
-
-varying vec3 vViewDir;
-
+attribute vec4 a_position;
+varying vec4 v_position;
 void main() {
-    vViewDir = aPosition; // Salva la direzione locale del vertice
-    
-    // Calcola la posizione finale senza alterazioni di curvatura
-    gl_Position = uProjection * uView * uModelMatrix * vec4(aPosition, 1.0);
+  v_position = a_position;
+  gl_Position = vec4(a_position.xy, 1, 1);
 }
 `;
 
+// precision mediump float;
+
+// varying vec3 vViewDir;
+
+// uniform vec3 uColorHorizon;
+// uniform vec3 uColorZenith;
+
+// void main() {
+//     // Normalizza il vettore perché l'interpolazione dei varying ne altera la lunghezza
+//     vec3 viewDir = normalize(vViewDir);
+
+//     // Calcola un fattore basato sull'altezza (clampato tra 0 e 1 per evitare artefatti sotto l'orizzonte)
+//     float factor = clamp(viewDir.y, 0.0, 1.0);
+//     float gradientFactor = pow(factor, 0.6);
+
+//     // Interpolazione lineare per creare il gradiente procedurale
+//     vec3 finalSkyColor = mix(uColorHorizon, uColorZenith, gradientFactor);
+
+//     gl_FragColor = vec4(finalSkyColor, 1.0);
+// }
 export const SKY_FRAGMENT_SHADER = `
 precision mediump float;
 
-varying vec3 vViewDir;
+uniform samplerCube u_skybox;
+uniform mat4 u_viewDirectionProjectionInverse;
 
-uniform vec3 uColorHorizon;
-uniform vec3 uColorZenith;
-
+varying vec4 v_position;
 void main() {
-    // Normalizza il vettore perché l'interpolazione dei varying ne altera la lunghezza
-    vec3 viewDir = normalize(vViewDir);
-    
-    // Calcola un fattore basato sull'altezza (clampato tra 0 e 1 per evitare artefatti sotto l'orizzonte)
-    float factor = clamp(viewDir.y, 0.0, 1.0);
-    float gradientFactor = pow(factor, 2.0);
-    
-    // Interpolazione lineare per creare il gradiente procedurale
-    vec3 finalSkyColor = mix(uColorHorizon, uColorZenith, gradientFactor);
-    
-    gl_FragColor = vec4(finalSkyColor, 1.0);
+  vec4 t = u_viewDirectionProjectionInverse * v_position;
+  gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
 }
 `;
 
 export function createShader(gl, type, source) {
-  const shader = gl.createShader(type);
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    const msg = gl.getShaderInfoLog(shader);
-    gl.deleteShader(shader);
-    throw new Error("Compilation fallita: " + msg);
-  }
-  return shader;
+	const shader = gl.createShader(type);
+	gl.shaderSource(shader, source);
+	gl.compileShader(shader);
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+		const msg = gl.getShaderInfoLog(shader);
+		gl.deleteShader(shader);
+		throw new Error('Compilation fallita: ' + msg);
+	}
+	return shader;
 }
 
 export function createProgram(gl, vsSource, fsSource) {
-  const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
-  const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+	const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+	const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
 
-  const program = gl.createProgram();
-  gl.attachShader(program, vs);
-  gl.attachShader(program, fs);
-  gl.linkProgram(program);
+	const program = gl.createProgram();
+	gl.attachShader(program, vs);
+	gl.attachShader(program, fs);
+	gl.linkProgram(program);
 
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    const msg = gl.getProgramInfoLog(program);
-    gl.deleteProgram(program);
-    throw new Error("Link fallito: " + msg);
-  }
+	if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+		const msg = gl.getProgramInfoLog(program);
+		gl.deleteProgram(program);
+		throw new Error('Link fallito: ' + msg);
+	}
 
-  gl.deleteShader(vs);
-  gl.deleteShader(fs);
-  return program;
+	gl.deleteShader(vs);
+	gl.deleteShader(fs);
+	return program;
 }
 
 export function createMesh(gl, geometry) {
-  const posBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, geometry.positions, gl.STATIC_DRAW);
+	const posBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, geometry.positions, gl.STATIC_DRAW);
 
-  const normBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, normBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, geometry.normals, gl.STATIC_DRAW);
+	const normBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ARRAY_BUFFER, normBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, geometry.normals, gl.STATIC_DRAW);
 
-  let uvBuffer = null;
-  if (geometry.uvs) {
-    uvBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, geometry.uvs, gl.STATIC_DRAW);
-  }
+	let uvBuffer = null;
+	if (geometry.uvs) {
+		uvBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, geometry.uvs, gl.STATIC_DRAW);
+	}
 
-  const idxBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, geometry.indices, gl.STATIC_DRAW);
+	const idxBuffer = gl.createBuffer();
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuffer);
+	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, geometry.indices, gl.STATIC_DRAW);
 
-  return {
-    posBuffer,
-    normBuffer,
-    uvBuffer,
-    idxBuffer,
-    indexCount: geometry.indices.length,
-  };
+	return {
+		posBuffer,
+		normBuffer,
+		uvBuffer,
+		idxBuffer,
+		indexCount: geometry.indices.length
+	};
 }
 
 export function setMeshAttributes(gl, program, mesh) {
-  const aPosition = gl.getAttribLocation(program, "aPosition");
-  const aNormal = gl.getAttribLocation(program, "aNormal");
-  const aUV = gl.getAttribLocation(program, "aUV");
+	const aPosition = gl.getAttribLocation(program, 'aPosition');
+	const aNormal = gl.getAttribLocation(program, 'aNormal');
+	const aUV = gl.getAttribLocation(program, 'aUV');
 
-  if (aPosition >= 0 && mesh.posBuffer) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.posBuffer);
-    gl.enableVertexAttribArray(aPosition);
-    gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
-  } else if (aPosition >= 0) {
-    gl.disableVertexAttribArray(aPosition);
-  }
+	if (aPosition >= 0 && mesh.posBuffer) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.posBuffer);
+		gl.enableVertexAttribArray(aPosition);
+		gl.vertexAttribPointer(aPosition, 3, gl.FLOAT, false, 0, 0);
+	} else if (aPosition >= 0) {
+		gl.disableVertexAttribArray(aPosition);
+	}
 
-  if (aNormal >= 0 && mesh.normBuffer) {
-    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normBuffer);
-    gl.enableVertexAttribArray(aNormal);
-    gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
-  } else if (aNormal >= 0) {
-    gl.disableVertexAttribArray(aNormal);
-  }
+	if (aNormal >= 0 && mesh.normBuffer) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normBuffer);
+		gl.enableVertexAttribArray(aNormal);
+		gl.vertexAttribPointer(aNormal, 3, gl.FLOAT, false, 0, 0);
+	} else if (aNormal >= 0) {
+		gl.disableVertexAttribArray(aNormal);
+	}
 
-  if (aUV >= 0) {
-    if (mesh.uvBuffer) {
-      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.uvBuffer);
-      gl.enableVertexAttribArray(aUV);
-      gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 0, 0);
-    } else {
-      gl.disableVertexAttribArray(aUV);
-    }
-  }
+	if (aUV >= 0) {
+		if (mesh.uvBuffer) {
+			gl.bindBuffer(gl.ARRAY_BUFFER, mesh.uvBuffer);
+			gl.enableVertexAttribArray(aUV);
+			gl.vertexAttribPointer(aUV, 2, gl.FLOAT, false, 0, 0);
+		} else {
+			gl.disableVertexAttribArray(aUV);
+		}
+	}
 
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuffer);
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuffer);
 }
 
 export function drawMesh(gl, mesh) {
-  gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_INT, 0);
+	gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_INT, 0);
 }
 
+let instanceBuffer = null;
 export function drawMeshInstanced(gl, program, mesh, matrices, instanceCount) {
-  const ext = gl.getExtension('ANGLE_instanced_arrays');
-  if (!ext) throw new Error('Instanced arrays not supported');
+	const ext = gl.getExtension('ANGLE_instanced_arrays');
+	if (!ext) throw new Error('Instanced arrays not supported');
 
-  // Bind base attributes
-  setMeshAttributes(gl, program, mesh);
+	// Bind base attributes
+	setMeshAttributes(gl, program, mesh);
 
-  // Create/Upload instance buffer (mat4 per instance as 4 vec4s)
-  const instanceBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.STATIC_DRAW);
-
-  const loc0 = gl.getAttribLocation(program, 'aInstanceModelMatrix0');
-  const loc1 = gl.getAttribLocation(program, 'aInstanceModelMatrix1');
-  const loc2 = gl.getAttribLocation(program, 'aInstanceModelMatrix2');
-  const loc3 = gl.getAttribLocation(program, 'aInstanceModelMatrix3');
-
-  const bytesPerMatrix = 16 * 4; // 16 floats * 4 bytes
-  if (loc0 >= 0) {
-    gl.enableVertexAttribArray(loc0);
-    gl.vertexAttribPointer(loc0, 4, gl.FLOAT, false, bytesPerMatrix, 0);
-    ext.vertexAttribDivisorANGLE(loc0, 1);
+	// Create/Upload instance buffer (mat4 per instance as 4 vec4s)
+  if (!instanceBuffer) {
+    instanceBuffer = gl.createBuffer();
   }
-  if (loc1 >= 0) {
-    gl.enableVertexAttribArray(loc1);
-    gl.vertexAttribPointer(loc1, 4, gl.FLOAT, false, bytesPerMatrix, 4 * 4);
-    ext.vertexAttribDivisorANGLE(loc1, 1);
-  }
-  if (loc2 >= 0) {
-    gl.enableVertexAttribArray(loc2);
-    gl.vertexAttribPointer(loc2, 4, gl.FLOAT, false, bytesPerMatrix, 8 * 4);
-    ext.vertexAttribDivisorANGLE(loc2, 1);
-  }
-  if (loc3 >= 0) {
-    gl.enableVertexAttribArray(loc3);
-    gl.vertexAttribPointer(loc3, 4, gl.FLOAT, false, bytesPerMatrix, 12 * 4);
-    ext.vertexAttribDivisorANGLE(loc3, 1);
-  }
+	gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.STATIC_DRAW);
 
-  // Draw instanced
-  ext.drawElementsInstancedANGLE(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_INT, 0, instanceCount);
+	const loc0 = gl.getAttribLocation(program, 'aInstanceModelMatrix0');
+	const loc1 = gl.getAttribLocation(program, 'aInstanceModelMatrix1');
+	const loc2 = gl.getAttribLocation(program, 'aInstanceModelMatrix2');
+	const loc3 = gl.getAttribLocation(program, 'aInstanceModelMatrix3');
 
-  // Cleanup divisors
-  if (loc0 >= 0) ext.vertexAttribDivisorANGLE(loc0, 0);
-  if (loc1 >= 0) ext.vertexAttribDivisorANGLE(loc1, 0);
-  if (loc2 >= 0) ext.vertexAttribDivisorANGLE(loc2, 0);
-  if (loc3 >= 0) ext.vertexAttribDivisorANGLE(loc3, 0);
+	const bytesPerMatrix = 16 * 4; // 16 floats * 4 bytes
+	if (loc0 >= 0) {
+		gl.enableVertexAttribArray(loc0);
+		gl.vertexAttribPointer(loc0, 4, gl.FLOAT, false, bytesPerMatrix, 0);
+		ext.vertexAttribDivisorANGLE(loc0, 1);
+	}
+	if (loc1 >= 0) {
+		gl.enableVertexAttribArray(loc1);
+		gl.vertexAttribPointer(loc1, 4, gl.FLOAT, false, bytesPerMatrix, 4 * 4);
+		ext.vertexAttribDivisorANGLE(loc1, 1);
+	}
+	if (loc2 >= 0) {
+		gl.enableVertexAttribArray(loc2);
+		gl.vertexAttribPointer(loc2, 4, gl.FLOAT, false, bytesPerMatrix, 8 * 4);
+		ext.vertexAttribDivisorANGLE(loc2, 1);
+	}
+	if (loc3 >= 0) {
+		gl.enableVertexAttribArray(loc3);
+		gl.vertexAttribPointer(loc3, 4, gl.FLOAT, false, bytesPerMatrix, 12 * 4);
+		ext.vertexAttribDivisorANGLE(loc3, 1);
+	}
 
-  // disable instance attrib arrays to avoid affecting subsequent non-instanced draws
-  if (loc0 >= 0) gl.disableVertexAttribArray(loc0);
-  if (loc1 >= 0) gl.disableVertexAttribArray(loc1);
-  if (loc2 >= 0) gl.disableVertexAttribArray(loc2);
-  if (loc3 >= 0) gl.disableVertexAttribArray(loc3);
+	// Draw instanced
+	ext.drawElementsInstancedANGLE(
+		gl.TRIANGLES,
+		mesh.indexCount,
+		gl.UNSIGNED_INT,
+		0,
+		instanceCount
+	);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.deleteBuffer(instanceBuffer);
+	// Cleanup divisors
+	if (loc0 >= 0) ext.vertexAttribDivisorANGLE(loc0, 0);
+	if (loc1 >= 0) ext.vertexAttribDivisorANGLE(loc1, 0);
+	if (loc2 >= 0) ext.vertexAttribDivisorANGLE(loc2, 0);
+	if (loc3 >= 0) ext.vertexAttribDivisorANGLE(loc3, 0);
+
+	// disable instance attrib arrays to avoid affecting subsequent non-instanced draws
+	if (loc0 >= 0) gl.disableVertexAttribArray(loc0);
+	if (loc1 >= 0) gl.disableVertexAttribArray(loc1);
+	if (loc2 >= 0) gl.disableVertexAttribArray(loc2);
+	if (loc3 >= 0) gl.disableVertexAttribArray(loc3);
+
+	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
 export async function loadTexture(gl, url) {
-  return new Promise((resolve, reject) => {
-    console.log("Caricando texture:", url);
-    const texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+	return new Promise((resolve, reject) => {
+		console.log('Caricando texture:', url);
+		const texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    const applyTextureParams = (isPowerOfTwo) => {
-      if (isPowerOfTwo) {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      } else {
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      }
-    };
+		const applyTextureParams = (isPowerOfTwo) => {
+			if (isPowerOfTwo) {
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			} else {
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			}
+		};
 
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => {
-      console.log("Texture caricata OK:", url, "Dimensioni:", image.width, "x", image.height);
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      const isPowerOfTwo = (value) => (value & (value - 1)) === 0;
-      const textureIsPowerOfTwo = isPowerOfTwo(image.width) && isPowerOfTwo(image.height);
-      applyTextureParams(textureIsPowerOfTwo);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      if (textureIsPowerOfTwo) {
-        gl.generateMipmap(gl.TEXTURE_2D);
-      }
-      resolve(texture);
-    };
-    image.onerror = () => {
-      console.error("Errore caricamento texture:", url);
-      reject(new Error("Impossibile caricare texture: " + url));
-    };
-    image.src = url;
-  });
+		const image = new Image();
+		image.crossOrigin = 'anonymous';
+		image.onload = () => {
+			console.log('Texture caricata OK:', url, 'Dimensioni:', image.width, 'x', image.height);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			const isPowerOfTwo = (value) => (value & (value - 1)) === 0;
+			const textureIsPowerOfTwo = isPowerOfTwo(image.width) && isPowerOfTwo(image.height);
+			applyTextureParams(textureIsPowerOfTwo);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+			if (textureIsPowerOfTwo) {
+				gl.generateMipmap(gl.TEXTURE_2D);
+			}
+			resolve(texture);
+		};
+		image.onerror = () => {
+			console.error('Errore caricamento texture:', url);
+			reject(new Error('Impossibile caricare texture: ' + url));
+		};
+		image.src = url;
+	});
 }

@@ -276,8 +276,8 @@ export function createCylinder(width = 60, depth = 60, subdivisionsX = 60, subdi
       // La normale iniziale punta verso l'alto globale (0, 1, 0)
       normals.push(0, 1, 0);
 
-      // Coordinate UV per le texture mappate sulla griglia
-      uvs.push(xPercent, zPercent);
+      // Coordinate UV per le texture mappate sulla griglia 100x100
+      uvs.push(xPercent*100, zPercent*100);
     }
   }
 

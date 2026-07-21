@@ -362,7 +362,7 @@ Per le collisioni, per ogni albero viene creato un collider cilindrico approssim
 
 ### Player
 
-Il player e` reso con un `GameObject` separato, ma la sua `modelMatrix` viene aggiornata ad ogni frame in base allo stato del `PlayerController`.
+Il player e' reso con un `GameObject` separato, ma la sua `modelMatrix` viene aggiornata ad ogni frame in base allo stato del `PlayerController`.
 
 ## Input e controlli
 

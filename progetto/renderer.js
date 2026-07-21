@@ -79,11 +79,15 @@ export class Renderer {
 		const fogColor = options.fogColor || [0.84, 0.93, 0.98];
 		const fogNear = options.fogNear ?? 10.0;
 		const fogFar = options.fogFar ?? 40.0;
-		const curvatureStrength = options.curvatureStrength ?? 0.018;
+		const curvatureStrength = options.curvatureStrength ?? 0.05;
 		const curvatureOrigin = options.curvatureOrigin || [0, 0];
+		const uSkyColorHorizon = options.skyColorHorizon || [0.95, 0.65, 0.65]; // Rosa/Arancio
+		const uSkyColorZenith = options.skyColorZenith || [0.15, 0.35, 0.8]; // Blu Notte
 
 		// gl.clearColor(0.24, 0.45, 0.22, 1); // sfondo tono terreno (niente linea cielo)
-    gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
+		gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
+		gl.clearColor(uSkyColorHorizon[0], uSkyColorHorizon[1], uSkyColorHorizon[2],  1.0);
+		gl.clearColor(uSkyColorZenith[0], uSkyColorZenith[1], uSkyColorZenith[2],  1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		const projection = mat4Perspective(
 			Math.PI / 4,
@@ -95,7 +99,7 @@ export class Renderer {
 
 		if (skyboxMesh && this.sky_program) {
 			gl.useProgram(this.sky_program);
-      gl.disable(gl.DEPTH_TEST);
+			gl.disable(gl.DEPTH_TEST);
 			gl.depthMask(false);
 
 			// Imposta le matrici e i colori del cielo
@@ -132,7 +136,7 @@ export class Renderer {
 			drawMesh(gl, skyboxMesh);
 
 			gl.depthMask(true);
-      gl.enable(gl.DEPTH_TEST);
+			gl.enable(gl.DEPTH_TEST);
 		}
 		gl.useProgram(this.program);
 
@@ -182,7 +186,7 @@ export class Renderer {
 
 			const useTexture = obj.texture ? true : false;
 			gl.uniform1i(this.uUseTexture, useTexture);
-			gl.uniform1i(this.uInvertUVY, obj.invertUVY ? true : false);
+			gl.uniform1i(this.uInvertUVY, obj.invertUVY ? 1 : 0); // true = 1, false = 0
 
 			if (obj.texture) {
 				gl.activeTexture(gl.TEXTURE0);

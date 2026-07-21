@@ -1,5 +1,4 @@
 // main.js: Orchestrazione scena con Player controller, Camera follow, Collisioni
-// Refactor: Mini-world terza persona con movimento controllato e collisioni forti
 
 import { createPlane, createCube, createDisc, createCylinder } from './geometry.js';
 import { loadOBJ, computeBounds } from './objLoader.js';
@@ -35,7 +34,8 @@ const TEXTURE_PATHS = {
 	houseDoorWindows: './obj/animal-crossing-house/textures/Base_Color.jpg',
 	char: './obj/animal-crossing-character/textures/character_ac_low_DefaultMaterial_BaseColor.png',
 	photo: './textures/mia-foto.jpg',
-	tree: './obj/animal-crossing-pine-tree/texture/texture_diffuse.png'
+	tree: './obj/animal-crossing-pine-tree/texture/texture_diffuse.png',
+	grass: './textures/grass.png'
 };
 
 // ====== WORLD PROPS & COLLIDERS ======
@@ -79,7 +79,8 @@ function buildModelMatrix(bounds, options = {}) {
 	const rotateY = options.rotateY ?? 0;
 	const minRelY = bounds.min[1] - bounds.center[1];
 	const placeOnGroundY = options.placeOnGround ? -minRelY * scale : 0;
-	const finalTranslate = [translate[0], translate[1] + placeOnGroundY + 0.02, translate[2]];
+	const extra = options.ySinkMul ? options.ySinkMul * scale : 0;
+	const finalTranslate = [translate[0], translate[1] + placeOnGroundY - extra, translate[2]];
 	return mat4Multiply(
 		mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]),
 		mat4Multiply(
@@ -145,7 +146,7 @@ function createControlPanel(state, camera, canvas) {
     <section class="hud-panel">
       <div class="hud-title">Animal Crossing Village</div>
       <div class="hud-row"><label><input id="lightToggle" type="checkbox" checked /> Luce orbitante</label></div>
-      <div class="hud-row"><label><input id="fogToggle" type="checkbox" checked/> Advanced: fog</label></div>
+      <div class="hud-row"><label><input id="fogToggle" type="checkbox" /> Advanced: fog</label></div>
       <div class="hud-row"><span>Fog near</span><input id="fogNearRange" type="range" min="4" max="20" step="1" value="10" /></div>
       <div class="hud-row"><span>Fog far</span><input id="fogFarRange" type="range" min="16" max="50" step="1" value="30" /></div>
       <div class="hud-help" id="playerInfo">Player: 0.00, 0.00 | Camera: 0.00, 0.00, 0.00</div>
@@ -330,6 +331,8 @@ async function main() {
 		photoTexture = char.texture;
 	}
 
+	const grassTexture = await loadTexture(gl, TEXTURE_PATHS.grass).catch(() => null);
+
 	// const groundGeo = createDisc(86, 96, 28);
 	const groundGeo = createCylinder(120, 120, 80, 80);
 	const groundMesh = createMesh(gl, groundGeo);
@@ -391,7 +394,13 @@ async function main() {
 	const photoPostMatrix = composeSignPart(signBaseMatrix, 0, 1.05, -0.04, 0.16, 2.1, 0.16);
 
 	const objects = [
-		{ mesh: groundMesh, modelMatrix: mat4Identity(), color: [0.1, 0.62, 0.16] },
+		{
+			mesh: groundMesh,
+			modelMatrix: mat4Identity(),
+			color: [1, 1, 1],
+			texture: grassTexture,
+			invertUVY: true
+		},
 		{
 			mesh: photoBoardMesh,
 			modelMatrix: photoBoardMatrix,
@@ -432,6 +441,7 @@ async function main() {
 		const m = buildModelMatrix(tree.bounds, {
 			scaleMul,
 			placeOnGround: true,
+			ySinkMul: 0.04,
 			translate: [x, 0, z],
 			rotateY: rot
 		});
@@ -450,14 +460,14 @@ async function main() {
 		});
 	}
 
-	const state = { rotateLight: false, enableFog: true, fogNear: 9, fogFar: 23 };
+	const state = { rotateLight: false, enableFog: false, fogNear: 9, fogFar: 23 };
 
 	const player = new PlayerController([0, 0, 9.0], 12);
 	const camera = new Camera([0, 6.4, 6.6], [0, 0, 0], canvas);
 	camera.mode = 'rolling-follow';
 	camera.followTarget = player;
 	camera.yaw = 0;
-	camera.rollingBackDistance = 6.0;
+	camera.rollingBackDistance = 8.0;
 	camera.rollingHeight = 3.5;
 	camera.rollingLookAhead = 0.0;
 	camera.smoothing = 0.0;
@@ -525,7 +535,7 @@ async function main() {
 			fogColor: [0.7, 0.85, 0.95],
 			fogNear: state.fogNear,
 			fogFar: state.fogFar,
-			curvatureStrength: 0.0048,
+			curvatureStrength: 0.005,
 			curvatureOrigin: [player.position[0], player.position[2]],
 			treeData: {
 				mesh: tree.mesh,
