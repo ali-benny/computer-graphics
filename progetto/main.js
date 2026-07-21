@@ -346,6 +346,7 @@ async function main() {
 	const houseMatrix = buildModelMatrix(houseBounds, {
 		scaleMul: 2,
 		placeOnGround: true,
+		rotateY: - Math.PI / 2,
 		translate: [0, 0, 0]
 	});
 	const signBaseMatrix = mat4Multiply(mat4Translate(4.1, 0.0, -2.0), mat4RotateY(-0.3));
@@ -422,10 +423,7 @@ async function main() {
 		objects.splice(1, 0, go);
 	};
 	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
-	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture || houseWallsTexture);
-	if (!houseMaterialMeshes.Walls_Roof && !houseMaterialMeshes.Door_windows) {
-		addHousePart(houseMaterialMeshes.default, houseWallsTexture);
-	}
+	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
 
 	// Prepare instanced matrices for many trees (20) instead of creating many GameObject instances
 	const TREE_COUNT = 30;
