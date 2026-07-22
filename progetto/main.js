@@ -1,25 +1,12 @@
 // main.js: Orchestrazione scena con Player controller, Camera follow, Collisioni
 
-import { createPlane, createCube, createDisc, createCylinder } from './geometry.js';
+import { createCube, createCylinder } from './geometry.js';
 import { loadOBJ, computeBounds } from './objLoader.js';
-import {
-	createMesh,
-	loadTexture,
-	setMeshAttributes,
-	drawMesh,
-	drawMeshInstanced
-} from './shaderUtils.js';
+import { createMesh, loadTexture } from './shaderUtils.js';
 import { createCanvas, Renderer } from './renderer.js';
 import { Camera } from './camera.js';
 import { PlayerController } from './player.js';
-import {
-	mat4Identity,
-	mat4Translate,
-	mat4Scale,
-	mat4Multiply,
-	mat4RotateY,
-	mat4Perspective
-} from './math.js';
+import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
 import GameObject from './gameObject.js';
 import { createHUDCanvas } from './hudCanvas.js';
 
@@ -38,18 +25,9 @@ const TEXTURE_PATHS = {
 	grass: './textures/grass.png'
 };
 
-// ====== WORLD PROPS & COLLIDERS ======
-
-const WORLD_PROPS = [
-	{ id: 'tree1', type: 'tree', position: [-4.2, 0, -2.5], rotation: 0.4, scale: 1.5 },
-	{ id: 'tree2', type: 'tree', position: [3.5, 0, -3.8], rotation: 0.7, scale: 1.5 },
-	{ id: 'board', type: 'board', position: [4.1, 0, -2.0], rotation: -0.3, scale: 1.0 }
-];
-
+// Collider statici di base (Gli alberi generati verranno aggiunti dinamicamente)
 const STATIC_COLLIDERS = [
 	{ type: 'aabb', name: 'house', min: [-3.5, 0, -3.0], max: [3.5, 3.0, 2.5] },
-	{ type: 'cylinder', name: 'tree1', center: [-4.2, 0, -2.5], radius: 0.6 },
-	{ type: 'cylinder', name: 'tree2', center: [3.5, 0, -3.8], radius: 0.6 },
 	{ type: 'boundsCircle', name: 'worldBoundCircle', center: [0, 0, 0], radius: 100 }
 ];
 
@@ -81,6 +59,7 @@ function buildModelMatrix(bounds, options = {}) {
 	const placeOnGroundY = options.placeOnGround ? -minRelY * scale : 0;
 	const extra = options.ySinkMul ? options.ySinkMul * scale : 0;
 	const finalTranslate = [translate[0], translate[1] + placeOnGroundY - extra, translate[2]];
+
 	return mat4Multiply(
 		mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]),
 		mat4Multiply(
@@ -93,51 +72,26 @@ function buildModelMatrix(bounds, options = {}) {
 	);
 }
 
-function addHoldButtonEvents(button, key, inputActions) {
-	const down = (event) => {
-		event.preventDefault();
-		const k = key.toLowerCase();
-		if (k === 'w') inputActions.moveForward = true;
-		if (k === 's') inputActions.moveBackward = true;
-		if (k === 'a') inputActions.moveLeft = true;
-		if (k === 'd') inputActions.moveRight = true;
-	};
-	const up = (event) => {
-		event.preventDefault();
-		const k = key.toLowerCase();
-		if (k === 'w') inputActions.moveForward = false;
-		if (k === 's') inputActions.moveBackward = false;
-		if (k === 'a') inputActions.moveLeft = false;
-		if (k === 'd') inputActions.moveRight = false;
-	};
-	button.addEventListener('mousedown', down);
-	button.addEventListener('mouseup', up);
-	button.addEventListener('mouseleave', up);
-	button.addEventListener('touchstart', down, { passive: false });
-	button.addEventListener('touchend', up, { passive: false });
-	button.addEventListener('touchcancel', up, { passive: false });
-}
-
 function createControlPanel(state, camera, canvas) {
 	const style = document.createElement('style');
 	style.textContent = `
-    .hud-root { position: fixed; inset: 0; pointer-events: none; z-index: 20; color: #f7f7f7; font-family: "Trebuchet MS", sans-serif; }
-    .hud-panel { pointer-events: auto; position: absolute; top: 12px; left: 12px; width: min(330px, calc(100vw - 24px));
-      background: linear-gradient(135deg, rgba(20, 28, 36, 0.92), rgba(20, 36, 24, 0.86)); border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 12px; padding: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); backdrop-filter: blur(4px); }
-    .hud-title { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 8px; color: #ffe9a8; }
-    .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 13px; }
-    .hud-row input[type="range"] { width: 130px; }
-    .hud-help { margin-top: 10px; font-size: 12px; line-height: 1.35; color: rgba(255, 255, 255, 0.84); }
-    .hud-mobile { pointer-events: auto; position: absolute; left: 12px; right: 12px; bottom: 12px;
-      display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-    .move-pad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; user-select: none; touch-action: none; }
-    .move-pad button { border: 0; border-radius: 10px; background: rgba(20, 28, 36, 0.74); color: #fff; font-size: 16px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
-    .look-pad { width: min(40vw, 190px); height: min(40vw, 190px); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.2);
-      background: radial-gradient(circle at center, rgba(155, 212, 255, 0.2), rgba(20, 28, 36, 0.55)); touch-action: none; position: relative; overflow: hidden; }
-    .look-pad span { position: absolute; left: 8px; bottom: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.8); }
-    @media (min-width: 920px) { .hud-mobile { max-width: 540px; } }
-  `;
+        .hud-root { position: fixed; inset: 0; pointer-events: none; z-index: 20; color: #f7f7f7; font-family: "Trebuchet MS", sans-serif; }
+        .hud-panel { pointer-events: auto; position: absolute; top: 12px; left: 12px; width: min(330px, calc(100vw - 24px));
+          background: linear-gradient(135deg, rgba(20, 28, 36, 0.92), rgba(20, 36, 24, 0.86)); border: 1px solid rgba(255, 255, 255, 0.2);
+          border-radius: 12px; padding: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); backdrop-filter: blur(4px); }
+        .hud-title { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 8px; color: #ffe9a8; }
+        .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 13px; }
+        .hud-row input[type="range"] { width: 130px; }
+        .hud-help { margin-top: 10px; font-size: 12px; line-height: 1.35; color: rgba(255, 255, 255, 0.84); }
+        .hud-mobile { pointer-events: auto; position: absolute; left: 12px; right: 12px; bottom: 12px;
+          display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .move-pad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; user-select: none; touch-action: none; }
+        .move-pad button { border: 0; border-radius: 10px; background: rgba(20, 28, 36, 0.74); color: #fff; font-size: 16px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
+        .look-pad { width: min(40vw, 190px); height: min(40vw, 190px); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.2);
+          background: radial-gradient(circle at center, rgba(155, 212, 255, 0.2), rgba(20, 28, 36, 0.55)); touch-action: none; position: relative; overflow: hidden; }
+        .look-pad span { position: absolute; left: 8px; bottom: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.8); }
+        @media (min-width: 920px) { .hud-mobile { max-width: 540px; } }
+    `;
 	document.head.appendChild(style);
 
 	const root = document.createElement('div');
@@ -159,22 +113,25 @@ function createControlPanel(state, camera, canvas) {
         <div></div><div></div><div></div>
       </div>
       <div class="look-pad" id="lookPad"><span>LOOK</span></div>
-    </div>
-  `;
+    </div>`;
 	document.body.appendChild(root);
 
-	root.querySelector('#lightToggle').addEventListener('change', (e) => {
-		state.rotateLight = e.target.checked;
-	});
-	root.querySelector('#fogToggle').addEventListener('change', (e) => {
-		state.enableFog = e.target.checked;
-	});
-	root.querySelector('#fogNearRange').addEventListener('input', (e) => {
-		state.fogNear = Number(e.target.value);
-	});
-	root.querySelector('#fogFarRange').addEventListener('input', (e) => {
-		state.fogFar = Math.max(state.fogNear + 1, Number(e.target.value));
-	});
+	root.querySelector('#lightToggle').addEventListener(
+		'change',
+		(e) => (state.rotateLight = e.target.checked)
+	);
+	root.querySelector('#fogToggle').addEventListener(
+		'change',
+		(e) => (state.enableFog = e.target.checked)
+	);
+	root.querySelector('#fogNearRange').addEventListener(
+		'input',
+		(e) => (state.fogNear = Number(e.target.value))
+	);
+	root.querySelector('#fogFarRange').addEventListener(
+		'input',
+		(e) => (state.fogFar = Math.max(state.fogNear + 1, Number(e.target.value)))
+	);
 
 	const playerInfo = root.querySelector('#playerInfo');
 	const inputActions = {
@@ -184,28 +141,32 @@ function createControlPanel(state, camera, canvas) {
 		moveRight: false
 	};
 
-	// Desktop keyboard
-	window.addEventListener('keydown', (e) => {
-		const k = e.key.toLowerCase();
-		if (k === 'w') inputActions.moveForward = true;
-		if (k === 's') inputActions.moveBackward = true;
-		if (k === 'a') inputActions.moveLeft = true;
-		if (k === 'd') inputActions.moveRight = true;
-	});
-	window.addEventListener('keyup', (e) => {
-		const k = e.key.toLowerCase();
-		if (k === 'w') inputActions.moveForward = false;
-		if (k === 's') inputActions.moveBackward = false;
-		if (k === 'a') inputActions.moveLeft = false;
-		if (k === 'd') inputActions.moveRight = false;
-	});
+	// Gestione unificata Mappatura Tasti Desktop
+	const keyMap = { w: 'moveForward', s: 'moveBackward', a: 'moveLeft', d: 'moveRight' };
+	const handleKey = (e, isDown) => {
+		const action = keyMap[e.key.toLowerCase()];
+		if (action) inputActions[action] = isDown;
+	};
+	window.addEventListener('keydown', (e) => handleKey(e, true));
+	window.addEventListener('keyup', (e) => handleKey(e, false));
 
-	// Mobile move pad
+	// Touch Pad Movimento Mobile
 	root.querySelectorAll('.move-pad button').forEach((btn) => {
-		addHoldButtonEvents(btn, btn.dataset.key, inputActions);
+		const action = keyMap[btn.dataset.key];
+		if (!action) return;
+		const setAction = (v) => (e) => {
+			e.preventDefault();
+			inputActions[action] = v;
+		};
+		['mousedown', 'touchstart'].forEach((ev) =>
+			btn.addEventListener(ev, setAction(true), { passive: false })
+		);
+		['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((ev) =>
+			btn.addEventListener(ev, setAction(false), { passive: false })
+		);
 	});
 
-	// Mobile look pad
+	// Touch Pad Look
 	const lookPad = root.querySelector('#lookPad');
 	let lookDragging = false,
 		lookX = 0,
@@ -218,56 +179,13 @@ function createControlPanel(state, camera, canvas) {
 	});
 	lookPad.addEventListener('pointermove', (e) => {
 		if (!lookDragging) return;
-		const dx = e.clientX - lookX,
-			dy = e.clientY - lookY;
+		camera.look(e.clientX - lookX, e.clientY - lookY, 0.6);
 		lookX = e.clientX;
 		lookY = e.clientY;
-		camera.look(dx, dy, 0.6);
 		e.preventDefault();
 	});
-	lookPad.addEventListener('pointerup', () => {
-		lookDragging = false;
-	});
-	lookPad.addEventListener('pointercancel', () => {
-		lookDragging = false;
-	});
-
-	// Canvas touch look
-	let touchId = null,
-		touchX = 0,
-		touchY = 0;
-	canvas.addEventListener(
-		'touchstart',
-		(e) => {
-			if (touchId !== null || e.touches.length === 0) return;
-			const touch = e.touches[0];
-			touchId = touch.identifier;
-			touchX = touch.clientX;
-			touchY = touch.clientY;
-		},
-		{ passive: true }
-	);
-	canvas.addEventListener(
-		'touchmove',
-		(e) => {
-			if (touchId === null) return;
-			const touch = Array.from(e.touches).find((t) => t.identifier === touchId);
-			if (!touch) return;
-			const dx = touch.clientX - touchX,
-				dy = touch.clientY - touchY;
-			touchX = touch.clientX;
-			touchY = touch.clientY;
-			camera.look(dx, dy, 0.45);
-			e.preventDefault();
-		},
-		{ passive: false }
-	);
-	canvas.addEventListener('touchend', () => {
-		touchId = null;
-	});
-	canvas.addEventListener('touchcancel', () => {
-		touchId = null;
-	});
+	const stopLook = () => (lookDragging = false);
+	['pointerup', 'pointercancel'].forEach((ev) => lookPad.addEventListener(ev, stopLook));
 
 	return {
 		inputActions,
@@ -318,81 +236,61 @@ async function main() {
 		houseMaterialMeshes.default = createMesh(gl, houseGeometry);
 	}
 
-	const [houseWallsTexture, houseDoorTexture] = await Promise.all([
+	const [houseWallsTexture, houseDoorTexture, photoTexture, grassTexture] = await Promise.all([
 		loadTexture(gl, TEXTURE_PATHS.houseWallsRoof).catch(() => null),
-		loadTexture(gl, TEXTURE_PATHS.houseDoorWindows).catch(() => null)
+		loadTexture(gl, TEXTURE_PATHS.houseDoorWindows).catch(() => null),
+		loadTexture(gl, TEXTURE_PATHS.photo).catch(() => char.texture),
+		loadTexture(gl, TEXTURE_PATHS.grass).catch(() => null)
 	]);
 
-	let photoTexture = null;
-	try {
-		photoTexture = await loadTexture(gl, TEXTURE_PATHS.photo);
-	} catch (e) {
-		console.warn('Foto personale non caricata, fallback.', e);
-		photoTexture = char.texture;
-	}
-
-	const grassTexture = await loadTexture(gl, TEXTURE_PATHS.grass).catch(() => null);
-
-	// const groundGeo = createDisc(86, 96, 28);
-	const groundGeo = createCylinder(120, 120, 80, 80);
-	const groundMesh = createMesh(gl, groundGeo);
-	const photoBoardGeo = createPhotoBoardGeometry(1.2, 1.6);
-	const photoBoardMesh = createMesh(gl, photoBoardGeo);
+	const groundMesh = createMesh(gl, createCylinder(120, 120, 80, 80));
+	const photoBoardMesh = createMesh(gl, createPhotoBoardGeometry(1.2, 1.6));
 	const signPostMesh = createMesh(gl, createCube(1));
-
-	const skyboxGeo = createCube(300);
-	const skyboxMesh = createMesh(gl, skyboxGeo);
+	const skyboxMesh = createMesh(gl, createCube(300));
 
 	const houseMatrix = buildModelMatrix(houseBounds, {
 		scaleMul: 2,
 		placeOnGround: true,
-		rotateY: - Math.PI / 2,
+		rotateY: -Math.PI / 2,
 		translate: [0, 0, 0]
 	});
+
+	// Costruzione Bacheca Foto con loop per evitare ridondanze
 	const signBaseMatrix = mat4Multiply(mat4Translate(4.1, 0.0, -2.0), mat4RotateY(-0.3));
 	const photoBoardMatrix = composeSignPart(signBaseMatrix, 0, 2.1, 0.07, 1.0, 1.0, 1.0);
+	const photoPostMatrix = composeSignPart(signBaseMatrix, 0, 1.05, -0.04, 0.16, 2.1, 0.16);
 
 	const frameThickness = 0.12,
 		frameDepth = 0.1,
-		halfPhotoW = 1.2 * 0.5,
-		halfPhotoH = 1.6 * 0.5;
-	const photoFrameTopMatrix = composeSignPart(
-		signBaseMatrix,
-		0,
-		2.1 + halfPhotoH + frameThickness * 0.5,
-		0,
-		1.2 + frameThickness * 2,
-		frameThickness,
-		frameDepth
-	);
-	const photoFrameBottomMatrix = composeSignPart(
-		signBaseMatrix,
-		0,
-		2.1 - halfPhotoH - frameThickness * 0.5,
-		0,
-		1.2 + frameThickness * 2,
-		frameThickness,
-		frameDepth
-	);
-	const photoFrameLeftMatrix = composeSignPart(
-		signBaseMatrix,
-		-(halfPhotoW + frameThickness * 0.5),
-		2.1,
-		0,
-		frameThickness,
-		1.6,
-		frameDepth
-	);
-	const photoFrameRightMatrix = composeSignPart(
-		signBaseMatrix,
-		halfPhotoW + frameThickness * 0.5,
-		2.1,
-		0,
-		frameThickness,
-		1.6,
-		frameDepth
-	);
-	const photoPostMatrix = composeSignPart(signBaseMatrix, 0, 1.05, -0.04, 0.16, 2.1, 0.16);
+		hw = 0.6,
+		hh = 0.8;
+	const frameParts = [
+		{
+			x: 0,
+			y: 2.1 + hh + frameThickness * 0.5,
+			z: 0,
+			sx: 1.2 + frameThickness * 2,
+			sy: frameThickness,
+			sz: frameDepth
+		},
+		{
+			x: 0,
+			y: 2.1 - hh - frameThickness * 0.5,
+			z: 0,
+			sx: 1.2 + frameThickness * 2,
+			sy: frameThickness,
+			sz: frameDepth
+		},
+		{
+			x: -(hw + frameThickness * 0.5),
+			y: 2.1,
+			z: 0,
+			sx: frameThickness,
+			sy: 1.6,
+			sz: frameDepth
+		},
+		{ x: hw + frameThickness * 0.5, y: 2.1, z: 0, sx: frameThickness, sy: 1.6, sz: frameDepth }
+	].map((p) => composeSignPart(signBaseMatrix, p.x, p.y, p.z, p.sx, p.sy, p.sz));
 
 	const objects = [
 		{
@@ -405,15 +303,12 @@ async function main() {
 		{
 			mesh: photoBoardMesh,
 			modelMatrix: photoBoardMatrix,
-			color: [1.0, 1.0, 1.0],
+			color: [1, 1, 1],
 			texture: photoTexture,
 			invertUVY: false
 		},
 		{ mesh: signPostMesh, modelMatrix: photoPostMatrix, color: [0.57, 0.37, 0.15] },
-		{ mesh: signPostMesh, modelMatrix: photoFrameTopMatrix, color: [0.71, 0.5, 0.22] },
-		{ mesh: signPostMesh, modelMatrix: photoFrameBottomMatrix, color: [0.71, 0.5, 0.22] },
-		{ mesh: signPostMesh, modelMatrix: photoFrameLeftMatrix, color: [0.71, 0.5, 0.22] },
-		{ mesh: signPostMesh, modelMatrix: photoFrameRightMatrix, color: [0.71, 0.5, 0.22] }
+		...frameParts.map((m) => ({ mesh: signPostMesh, modelMatrix: m, color: [0.71, 0.5, 0.22] }))
 	];
 
 	const addHousePart = (mesh, texture) => {
@@ -425,17 +320,20 @@ async function main() {
 	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
 	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
 
-	// Prepare instanced matrices for many trees (20) instead of creating many GameObject instances
+	// Generazione Alberi Instanziati
 	const TREE_COUNT = 30;
 	const treeMatrices = new Float32Array(TREE_COUNT * 16);
+	const treeOpacities = new Float32Array(TREE_COUNT);
 	const treeColliders = [];
+
 	for (let i = 0; i < TREE_COUNT; i++) {
 		const angle = Math.random() * Math.PI * 2;
-		const radius = 4 + Math.random() * 18; // avoid too close to center
+		const radius = 4 + Math.random() * 18;
 		const x = Math.cos(angle) * radius;
 		const z = Math.sin(angle) * radius;
 		const scaleMul = 1.1 + Math.random() * 1.1;
 		const rot = Math.random() * Math.PI * 2;
+
 		const m = buildModelMatrix(tree.bounds, {
 			scaleMul,
 			placeOnGround: true,
@@ -443,18 +341,15 @@ async function main() {
 			translate: [x, 0, z],
 			rotateY: rot
 		});
+
+		treeOpacities[i] = 1.0;
 		for (let k = 0; k < 16; k++) treeMatrices[i * 16 + k] = m[k];
 
-		// compute approximate cylindrical collider center from matrix (indices 12,13,14)
-		const cx = m[12];
-		const cy = m[13];
-		const cz = m[14];
-		const radiusCollider = 0.6 * scaleMul; // heuristic
 		treeColliders.push({
 			type: 'cylinder',
 			name: `tree_inst_${i}`,
-			center: [cx, cy, cz],
-			radius: radiusCollider
+			center: [m[12], m[13], m[14]],
+			radius: 0.6 * scaleMul
 		});
 	}
 
@@ -473,7 +368,6 @@ async function main() {
 	const hud = createControlPanel(state, camera, canvas);
 	const hudCanvas = createHUDCanvas({ worldRadius: 26 });
 
-	// Create GameObject for player character (we'll update its modelMatrix each frame using buildModelMatrix)
 	const playerGO = new GameObject({
 		gl,
 		mesh: char.mesh,
@@ -481,16 +375,6 @@ async function main() {
 		color: [1.0, 1.0, 1.0],
 		invertUVY: true
 	});
-	// initial placement via helper
-	playerGO.setModelMatrix(
-		buildModelMatrix(char.bounds, {
-			scaleMul: 0.72,
-			placeOnGround: true,
-			translate: player.position,
-			rotateY: player.yaw
-		})
-	);
-	// insert playerGO into objects so it's rendered with others
 	objects.splice(1, 0, playerGO);
 
 	let lastTime = performance.now(),
@@ -500,7 +384,7 @@ async function main() {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
 		lastTime = nowMs;
 
-		// 1. Logica di movimento e fisica
+		// 1. Movimento e Fisica
 		const cameraForward = [
 			Math.sin(camera.yaw) * Math.cos(camera.pitch),
 			Math.sin(camera.pitch),
@@ -512,7 +396,23 @@ async function main() {
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
-		// 2. Aggiorna le matrici dei personaggi
+		// 2. Calcolo opacità dinamica degli alberi vicini alla camera
+		const FADE_RADIUS = 3.5; // Distanza di sfumatura
+		for (let i = 0; i < treeColliders.length; i++) {
+			const tc = treeColliders[i].center;
+			const dx = tc[0] - camera.position[0];
+			const dz = tc[2] - camera.position[2];
+			const distToCam = Math.sqrt(dx * dx + dz * dz);
+
+			let targetOpacity = 1.0;
+			if (distToCam < FADE_RADIUS) {
+				targetOpacity = 0.0;
+			}
+			// LERP per transizione morbida
+			treeOpacities[i] += (targetOpacity - treeOpacities[i]) * 0.1;
+		}
+
+		// 3. Aggiorna matrici Player
 		playerGO.setModelMatrix(
 			buildModelMatrix(char.bounds, {
 				scaleMul: 0.72,
@@ -522,11 +422,10 @@ async function main() {
 			})
 		);
 
-		if (state.rotateLight) {
-			lightAngle += deltaTime * 0.65;
-		}
+		if (state.rotateLight) lightAngle += deltaTime * 0.65;
 		const lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
 
+		// 4. Rendering (passando treeOpacities aggiornato)
 		renderer.render(camera, objects, skyboxMesh, {
 			lightDir: lightDir,
 			enableFog: state.enableFog,
@@ -539,11 +438,12 @@ async function main() {
 				mesh: tree.mesh,
 				texture: tree.texture,
 				matrices: treeMatrices,
+				opacities: treeOpacities,
 				count: TREE_COUNT
 			}
 		});
 
-		// 4. Aggiorna l'interfaccia bidimensionale
+		// 5. HUD 2D
 		hud.updateInfo(player, camera);
 		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders);
 
@@ -551,7 +451,6 @@ async function main() {
 	}
 
 	requestAnimationFrame(animate);
-	console.log('Avviato: terza persona + collisioni + mini-mondo');
 }
 
 main().catch((error) => {

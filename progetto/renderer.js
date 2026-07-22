@@ -38,6 +38,7 @@ export class Renderer {
 		this.uUseTexture = this.gl.getUniformLocation(this.program, 'uUseTexture');
 		this.uInvertUVY = this.gl.getUniformLocation(this.program, 'uInvertUVY');
 		this.uEnableFog = this.gl.getUniformLocation(this.program, 'uEnableFog');
+		this.uOpacity = this.gl.getUniformLocation(this.program, 'uOpacity');
 		this.uFogColor = this.gl.getUniformLocation(this.program, 'uFogColor');
 		this.uFogNear = this.gl.getUniformLocation(this.program, 'uFogNear');
 		this.uFogFar = this.gl.getUniformLocation(this.program, 'uFogFar');
@@ -53,8 +54,8 @@ export class Renderer {
 		this.uSkyColorZenhit = this.gl.getUniformLocation(this.sky_program, 'uColorZenith');
 
 		this.gl.enable(this.gl.DEPTH_TEST);
-		// this.gl.enable(this.gl.CULL_FACE); // DISABILITATO per debug
-		// this.gl.cullFace(this.gl.BACK);
+		this.gl.enable(this.gl.BLEND);
+		this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
 
 		this.resize();
 		window.addEventListener('resize', () => this.resize());
@@ -76,6 +77,7 @@ export class Renderer {
 		const gl = this.gl;
 		const lightDir = options.lightDir || [-0.35, 1.0, 0.25];
 		const enableFog = Boolean(options.enableFog);
+		const uOpacity = options.opacity ?? 1.0;
 		const fogColor = options.fogColor || [0.84, 0.93, 0.98];
 		const fogNear = options.fogNear ?? 10.0;
 		const fogFar = options.fogFar ?? 40.0;
@@ -84,10 +86,9 @@ export class Renderer {
 		const uSkyColorHorizon = options.skyColorHorizon || [0.95, 0.65, 0.65]; // Rosa/Arancio
 		const uSkyColorZenith = options.skyColorZenith || [0.15, 0.35, 0.8]; // Blu Notte
 
-		// gl.clearColor(0.24, 0.45, 0.22, 1); // sfondo tono terreno (niente linea cielo)
 		gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
-		gl.clearColor(uSkyColorHorizon[0], uSkyColorHorizon[1], uSkyColorHorizon[2],  1.0);
-		gl.clearColor(uSkyColorZenith[0], uSkyColorZenith[1], uSkyColorZenith[2],  1.0);
+		gl.clearColor(uSkyColorHorizon[0], uSkyColorHorizon[1], uSkyColorHorizon[2], 1.0);
+		gl.clearColor(uSkyColorZenith[0], uSkyColorZenith[1], uSkyColorZenith[2], 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		const projection = mat4Perspective(
 			Math.PI / 4,
@@ -97,49 +98,38 @@ export class Renderer {
 		);
 		const view = camera.getViewMatrix();
 
+		// ========== Skybox ==========
 		if (skyboxMesh && this.sky_program) {
 			gl.useProgram(this.sky_program);
-			gl.disable(gl.DEPTH_TEST);
-			gl.depthMask(false);
 
-			// Imposta le matrici e i colori del cielo
+			// Togliamo il Translate dalla matrice di View per mantenere il cielo ancorato alla camera
+			const viewNoTranslation = new Float32Array(view);
+			viewNoTranslation[12] = 0;
+			viewNoTranslation[13] = 0;
+			viewNoTranslation[14] = 0;
+
+			gl.depthFunc(gl.LEQUAL);
+
+			// Passiamo le uniformi al Vertex Shader
 			gl.uniformMatrix4fv(this.uSkyProjection, false, new Float32Array(projection));
-			gl.uniformMatrix4fv(this.uSkyView, false, new Float32Array(view));
+			gl.uniformMatrix4fv(this.uSkyView, false, viewNoTranslation);
 
-			gl.uniformMatrix4fv(
-				this.uSkyModelMatrix,
-				false,
-				new Float32Array([
-					100,
-					0,
-					0,
-					0,
-					0,
-					100,
-					0,
-					0,
-					0,
-					0,
-					100,
-					0,
-					camera.position[0],
-					camera.position[1],
-					camera.position[2],
-					1
-				])
-			);
+			// Matrice Model identità scalata per la dimensione del cubo
+			const skyModel = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+			gl.uniformMatrix4fv(this.uSkyModelMatrix, false, skyModel);
 
+			// Colori sfumati (Orizzonte e Cima del cielo)
 			gl.uniform3f(this.uSkyColorHorizon, fogColor[0], fogColor[1], fogColor[2]);
-			gl.uniform3f(this.uSkyColorZenhit, 0.45, 0.68, 0.90);
+			gl.uniform3f(this.uSkyColorZenhit, 0.35, 0.58, 0.88);
 
 			setMeshAttributes(gl, this.sky_program, skyboxMesh);
 			drawMesh(gl, skyboxMesh);
 
-			gl.depthMask(true);
-			gl.enable(gl.DEPTH_TEST);
+			gl.depthFunc(gl.LESS);
 		}
 		gl.useProgram(this.program);
 
+		// - Setup uniform globali -
 		gl.uniformMatrix4fv(this.uProjection, false, new Float32Array(projection));
 		gl.uniformMatrix4fv(this.uView, false, new Float32Array(view));
 		gl.uniform3f(this.uLightDir, lightDir[0], lightDir[1], lightDir[2]);
@@ -151,6 +141,27 @@ export class Renderer {
 		gl.uniform1f(this.uCurvatureStrength, curvatureStrength);
 		gl.uniform2f(this.uCurvatureOrigin, curvatureOrigin[0], curvatureOrigin[1]);
 
+		// - Tutti gli oggetti opachi -
+		for (const obj of objects) {
+			gl.uniformMatrix4fv(this.uModelMatrix, false, new Float32Array(obj.modelMatrix));
+			gl.uniform3f(this.uBaseColor, obj.color[0], obj.color[1], obj.color[2]);
+			gl.uniform1f(this.uOpacity, obj.opacity ?? uOpacity);
+
+			const useTexture = obj.texture ? true : false;
+			gl.uniform1i(this.uUseTexture, useTexture);
+			gl.uniform1i(this.uInvertUVY, obj.invertUVY ? 1 : 0); // true = 1, false = 0
+
+			if (obj.texture) {
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_2D, obj.texture);
+				gl.uniform1i(this.uTexture, 0);
+			}
+
+			setMeshAttributes(gl, this.program, obj.mesh);
+			drawMesh(gl, obj.mesh);
+		}
+
+		// - Tutti gli oggetti che possono diventare trasparenti -
 		if (options.treeData && options.treeData.mesh) {
 			const td = options.treeData;
 
@@ -170,32 +181,74 @@ export class Renderer {
 			gl.uniform1i(this.uInvertUVY, 1);
 			gl.uniform3f(this.uBaseColor, 1.0, 1.0, 1.0);
 
-			// Configura gli attributi della mesh per il programma corrente
 			setMeshAttributes(gl, this.program, td.mesh);
 
-			// Esegui il disegno istanziato
-			drawMeshInstanced(gl, this.program, td.mesh, td.matrices, td.count);
+			// Separiamo gli alberi opachi da quelli trasparenti
+			const opaqueIndices = [];
+			const transparentIndices = [];
 
-			gl.uniform1i(this.uUseInstancing, 0);
-		}
-
-		// Disegna ogni oggetto
-		for (const obj of objects) {
-			gl.uniformMatrix4fv(this.uModelMatrix, false, new Float32Array(obj.modelMatrix));
-			gl.uniform3f(this.uBaseColor, obj.color[0], obj.color[1], obj.color[2]);
-
-			const useTexture = obj.texture ? true : false;
-			gl.uniform1i(this.uUseTexture, useTexture);
-			gl.uniform1i(this.uInvertUVY, obj.invertUVY ? 1 : 0); // true = 1, false = 0
-
-			if (obj.texture) {
-				gl.activeTexture(gl.TEXTURE0);
-				gl.bindTexture(gl.TEXTURE_2D, obj.texture);
-				gl.uniform1i(this.uTexture, 0);
+			if (td.opacities) {
+				for (let i = 0; i < td.count; i++) {
+					if (td.opacities[i] >= 0.99) {
+						opaqueIndices.push(i);
+					} else if (td.opacities[i] > 0.02) {
+						// Ignoriamo quelli quasi del tutto invisibili
+						transparentIndices.push(i);
+					}
+				}
+			} else {
+				// Se non ci sono opacità specificate, considerali tutti opachi
+				for (let i = 0; i < td.count; i++) opaqueIndices.push(i);
 			}
 
-			setMeshAttributes(gl, this.program, obj.mesh);
-			drawMesh(gl, obj.mesh);
+			// Funzione di comodo per estrarre e filtrare i dati delle matrici/opacità
+			const drawSubGroup = (indices) => {
+				if (indices.length === 0) return;
+
+				const subMatrices = new Float32Array(indices.length * 16);
+				const subOpacities = new Float32Array(indices.length);
+
+				for (let i = 0; i < indices.length; i++) {
+					const idx = indices[i];
+					// Copia matrice (16 float)
+					subMatrices.set(td.matrices.subarray(idx * 16, (idx + 1) * 16), i * 16);
+					// Copia opacità (1 float)
+					subOpacities[i] = td.opacities ? td.opacities[idx] : 1.0;
+				}
+
+				drawMeshInstanced(
+					gl,
+					this.program,
+					td.mesh,
+					subMatrices,
+					subOpacities,
+					indices.length
+				);
+			};
+
+			// 1. PASSO 1: Disegna prima gli ALBERI OPACHI (Depth Write attivo)
+			gl.depthMask(true);
+			drawSubGroup(opaqueIndices);
+
+			// 2. PASSO 2: Disegna gli ALBERI IN DISSOLVENZA (senza far vedere i triangoli interni)
+            if (transparentIndices.length > 0) {
+                gl.depthMask(false);
+                gl.enable(gl.CULL_FACE); // Attiva l'eliminazione delle facce nascoste
+
+                // A) Prima disegnamo solo le facce posteriori (dietro) dell'albero
+                gl.cullFace(gl.FRONT);
+                drawSubGroup(transparentIndices);
+
+                // B) Poi disegnamo solo le facce anteriori (davanti/esterne)
+                gl.cullFace(gl.BACK);
+                drawSubGroup(transparentIndices);
+
+                // Ripristiniamo lo stato normale
+                gl.disable(gl.CULL_FACE);
+                gl.depthMask(true);
+            }
+
+			gl.uniform1i(this.uUseInstancing, 0);
 		}
 	}
 }

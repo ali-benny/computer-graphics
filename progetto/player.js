@@ -1,5 +1,3 @@
-// player.js: Player controller con movimento, rotazione e collisioni base
-
 export class PlayerController {
   constructor(startPos = [0, 0, 0], speed = 12) {
     this.position = [...startPos];

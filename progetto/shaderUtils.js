@@ -1,15 +1,14 @@
-// shaderUtils.js: Utilità per shader WebGL
-
 export const VERTEX_SHADER = `
 attribute vec3 aPosition;
 attribute vec3 aNormal;
 attribute vec2 aUV;
 
-// Per instancing: 4 attributi vec4 che compongono la matrice di istanza
+// Per instancing: 4 attributi vec4 per la matrice + 1 float per l'opacità
 attribute vec4 aInstanceModelMatrix0;
 attribute vec4 aInstanceModelMatrix1;
 attribute vec4 aInstanceModelMatrix2;
 attribute vec4 aInstanceModelMatrix3;
+attribute float aInstanceOpacity; 
 
 uniform mat4 uModelMatrix;
 uniform bool uUseInstancing;
@@ -17,17 +16,24 @@ uniform mat4 uView;
 uniform mat4 uProjection;
 uniform float uCurvatureStrength;
 uniform vec2 uCurvatureOrigin;
+uniform float uOpacity; // Fallback per rendering non-istanziato
 
 varying vec3 vNormal;
 varying vec3 vWorldPos;
 varying vec2 vUV;
+varying float vOpacity;
 
 void main() {
   mat4 instanceMat = mat4(aInstanceModelMatrix0, aInstanceModelMatrix1, aInstanceModelMatrix2, aInstanceModelMatrix3);
   vec4 localPos = vec4(aPosition, 1.0);
 
   mat4 model = uModelMatrix;
-  if (uUseInstancing) model = uModelMatrix * instanceMat;
+  if (uUseInstancing) {
+    model = uModelMatrix * instanceMat;
+    vOpacity = aInstanceOpacity;
+  } else {
+    vOpacity = uOpacity;
+  }
 
   vec4 worldPos = model * localPos;
 
@@ -51,6 +57,7 @@ precision mediump float;
 varying vec3 vNormal;
 varying vec3 vWorldPos;
 varying vec2 vUV;
+varying float vOpacity;
 
 uniform vec3 uLightDir;
 uniform vec3 uBaseColor;
@@ -64,6 +71,9 @@ uniform float uFogNear;
 uniform float uFogFar;
 
 void main() {
+  if (vOpacity < 0.05) {
+    discard;
+  }
   vec3 N = normalize(vNormal);
   vec3 L = normalize(-uLightDir);
   float diff = max(dot(N, L), 0.0);
@@ -73,12 +83,21 @@ void main() {
   float spec = pow(max(dot(N, H), 0.0), 14.0);
 
   vec3 baseCol = uBaseColor;
+  float texAlpha = 1.0;
+
   if (uUseTexture) {
     vec2 uv = vUV;
     if (uInvertUVY) {
       uv.y = 1.0 - uv.y;
     }
-    baseCol = texture2D(uTexture, uv).rgb;
+    vec4 texColor = texture2D(uTexture, uv);
+    baseCol = texColor.rgb;
+    texAlpha = texColor.a;
+  }
+
+  // Alpha Cutout opzionale per foglie trasparenti (se la texture ha parti vuote)
+  if (texAlpha < 0.1) {
+    discard;
   }
 
   vec3 skyTint = vec3(0.92, 0.97, 1.0);
@@ -94,66 +113,48 @@ void main() {
     litColor = mix(litColor, uFogColor, fogFactor);
   }
 
-  gl_FragColor = vec4(litColor, 1.0);
+  // Combina l'Alpha della texture con l'opacità passata (uniform o istanziata)
+  gl_FragColor = vec4(litColor, texAlpha * vOpacity);
 }
 `;
 
-// attribute vec4 aPosition;
-
-// uniform mat4 uProjection;
-// uniform mat4 uView;
-// uniform mat4 uModelMatrix;
-
-// varying vec3 vViewDir;
-
-// void main() {
-//     // Calcoliamo la posizione globale del vertice del cubo dello skybox
-//     vec4 worldPos = uModelMatrix * vec4(aPosition, 1.0);
-
-//     // La direzione dal centro dello skybox (dove si trova la camera) verso il vertice
-//     vViewDir = worldPos.xyz - vec3(uModelMatrix[3][0], uModelMatrix[3][1], uModelMatrix[3][2]);
-
-//     gl_Position = uProjection * uView * worldPos;
-// }
 export const SKY_VERTEX_SHADER = `
-attribute vec4 a_position;
-varying vec4 v_position;
+attribute vec3 aPosition;
+
+uniform mat4 uProjection;
+uniform mat4 uView;
+uniform mat4 uModelMatrix;
+
+varying vec3 vWorldPos;
+
 void main() {
-  v_position = a_position;
-  gl_Position = vec4(a_position.xy, 1, 1);
+    vec4 worldPos = uModelMatrix * vec4(aPosition, 1.0);
+    vWorldPos = aPosition; // Usiamo le coordinate locali per calcolare la direzione della cupola
+    
+    vec4 pos = uProjection * uView * worldPos;
+    // Forziamo il depth buffer al valore massimo (1.0) in modo che il cielo rimanga sempre dietro a tutto
+    gl_Position = pos.xyww; 
 }
 `;
 
-// precision mediump float;
-
-// varying vec3 vViewDir;
-
-// uniform vec3 uColorHorizon;
-// uniform vec3 uColorZenith;
-
-// void main() {
-//     // Normalizza il vettore perché l'interpolazione dei varying ne altera la lunghezza
-//     vec3 viewDir = normalize(vViewDir);
-
-//     // Calcola un fattore basato sull'altezza (clampato tra 0 e 1 per evitare artefatti sotto l'orizzonte)
-//     float factor = clamp(viewDir.y, 0.0, 1.0);
-//     float gradientFactor = pow(factor, 0.6);
-
-//     // Interpolazione lineare per creare il gradiente procedurale
-//     vec3 finalSkyColor = mix(uColorHorizon, uColorZenith, gradientFactor);
-
-//     gl_FragColor = vec4(finalSkyColor, 1.0);
-// }
 export const SKY_FRAGMENT_SHADER = `
 precision mediump float;
 
-uniform samplerCube u_skybox;
-uniform mat4 u_viewDirectionProjectionInverse;
+varying vec3 vWorldPos;
 
-varying vec4 v_position;
+uniform vec3 uColorHorizon;
+uniform vec3 uColorZenith;
+
 void main() {
-  vec4 t = u_viewDirectionProjectionInverse * v_position;
-  gl_FragColor = textureCube(u_skybox, normalize(t.xyz / t.w));
+    // Normalizziamo la direzione
+    vec3 dir = normalize(vWorldPos);
+    
+    // Interpoliamo dal colore dell'orizzonte allo zenit in base alla coordinata Y
+    float factor = clamp(dir.y, 0.0, 1.0);
+    float gradientFactor = pow(factor, 0.5); // Rende la transizione più morbida
+
+    vec3 finalColor = mix(uColorHorizon, uColorZenith, gradientFactor);
+    gl_FragColor = vec4(finalColor, 1.0);
 }
 `;
 
@@ -257,48 +258,47 @@ export function drawMesh(gl, mesh) {
 }
 
 let instanceBuffer = null;
-export function drawMeshInstanced(gl, program, mesh, matrices, instanceCount) {
+let opacityBuffer = null;
+
+export function drawMeshInstanced(gl, program, mesh, matrices, opacities, instanceCount) {
 	const ext = gl.getExtension('ANGLE_instanced_arrays');
 	if (!ext) throw new Error('Instanced arrays not supported');
 
-	// Bind base attributes
 	setMeshAttributes(gl, program, mesh);
 
-	// Create/Upload instance buffer (mat4 per instance as 4 vec4s)
-  if (!instanceBuffer) {
-    instanceBuffer = gl.createBuffer();
-  }
+	// 1. Buffer delle Matrici di Istanza
+	if (!instanceBuffer) instanceBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.DYNAMIC_DRAW);
 
 	const loc0 = gl.getAttribLocation(program, 'aInstanceModelMatrix0');
 	const loc1 = gl.getAttribLocation(program, 'aInstanceModelMatrix1');
 	const loc2 = gl.getAttribLocation(program, 'aInstanceModelMatrix2');
 	const loc3 = gl.getAttribLocation(program, 'aInstanceModelMatrix3');
 
-	const bytesPerMatrix = 16 * 4; // 16 floats * 4 bytes
-	if (loc0 >= 0) {
-		gl.enableVertexAttribArray(loc0);
-		gl.vertexAttribPointer(loc0, 4, gl.FLOAT, false, bytesPerMatrix, 0);
-		ext.vertexAttribDivisorANGLE(loc0, 1);
-	}
-	if (loc1 >= 0) {
-		gl.enableVertexAttribArray(loc1);
-		gl.vertexAttribPointer(loc1, 4, gl.FLOAT, false, bytesPerMatrix, 4 * 4);
-		ext.vertexAttribDivisorANGLE(loc1, 1);
-	}
-	if (loc2 >= 0) {
-		gl.enableVertexAttribArray(loc2);
-		gl.vertexAttribPointer(loc2, 4, gl.FLOAT, false, bytesPerMatrix, 8 * 4);
-		ext.vertexAttribDivisorANGLE(loc2, 1);
-	}
-	if (loc3 >= 0) {
-		gl.enableVertexAttribArray(loc3);
-		gl.vertexAttribPointer(loc3, 4, gl.FLOAT, false, bytesPerMatrix, 12 * 4);
-		ext.vertexAttribDivisorANGLE(loc3, 1);
+	const bytesPerMatrix = 16 * 4;
+	const locs = [loc0, loc1, loc2, loc3];
+	locs.forEach((loc, i) => {
+		if (loc >= 0) {
+			gl.enableVertexAttribArray(loc);
+			gl.vertexAttribPointer(loc, 4, gl.FLOAT, false, bytesPerMatrix, i * 16);
+			ext.vertexAttribDivisorANGLE(loc, 1);
+		}
+	});
+
+	// 2. Buffer delle Opacità di Istanza
+	const locOpacity = gl.getAttribLocation(program, 'aInstanceOpacity');
+	if (locOpacity >= 0 && opacities) {
+		if (!opacityBuffer) opacityBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, opacityBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, opacities, gl.DYNAMIC_DRAW);
+
+		gl.enableVertexAttribArray(locOpacity);
+		gl.vertexAttribPointer(locOpacity, 1, gl.FLOAT, false, 0, 0);
+		ext.vertexAttribDivisorANGLE(locOpacity, 1);
 	}
 
-	// Draw instanced
+	// Disegno Istanziato
 	ext.drawElementsInstancedANGLE(
 		gl.TRIANGLES,
 		mesh.indexCount,
@@ -307,24 +307,23 @@ export function drawMeshInstanced(gl, program, mesh, matrices, instanceCount) {
 		instanceCount
 	);
 
-	// Cleanup divisors
-	if (loc0 >= 0) ext.vertexAttribDivisorANGLE(loc0, 0);
-	if (loc1 >= 0) ext.vertexAttribDivisorANGLE(loc1, 0);
-	if (loc2 >= 0) ext.vertexAttribDivisorANGLE(loc2, 0);
-	if (loc3 >= 0) ext.vertexAttribDivisorANGLE(loc3, 0);
-
-	// disable instance attrib arrays to avoid affecting subsequent non-instanced draws
-	if (loc0 >= 0) gl.disableVertexAttribArray(loc0);
-	if (loc1 >= 0) gl.disableVertexAttribArray(loc1);
-	if (loc2 >= 0) gl.disableVertexAttribArray(loc2);
-	if (loc3 >= 0) gl.disableVertexAttribArray(loc3);
+	// Cleanup Divisors e Attributi per non inquinare le chiamate successive
+	locs.forEach((loc) => {
+		if (loc >= 0) {
+			ext.vertexAttribDivisorANGLE(loc, 0);
+			gl.disableVertexAttribArray(loc);
+		}
+	});
+	if (locOpacity >= 0) {
+		ext.vertexAttribDivisorANGLE(locOpacity, 0);
+		gl.disableVertexAttribArray(locOpacity);
+	}
 
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
 export async function loadTexture(gl, url) {
 	return new Promise((resolve, reject) => {
-		console.log('Caricando texture:', url);
 		const texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -345,7 +344,6 @@ export async function loadTexture(gl, url) {
 		const image = new Image();
 		image.crossOrigin = 'anonymous';
 		image.onload = () => {
-			console.log('Texture caricata OK:', url, 'Dimensioni:', image.width, 'x', image.height);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			const isPowerOfTwo = (value) => (value & (value - 1)) === 0;
 			const textureIsPowerOfTwo = isPowerOfTwo(image.width) && isPowerOfTwo(image.height);
@@ -357,7 +355,6 @@ export async function loadTexture(gl, url) {
 			resolve(texture);
 		};
 		image.onerror = () => {
-			console.error('Errore caricamento texture:', url);
 			reject(new Error('Impossibile caricare texture: ' + url));
 		};
 		image.src = url;
