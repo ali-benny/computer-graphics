@@ -60,6 +60,7 @@ varying vec2 vUV;
 varying float vOpacity;
 
 uniform vec3 uLightDir;
+uniform vec3 uLightColor;
 uniform vec3 uBaseColor;
 uniform vec3 uCameraPos;
 uniform sampler2D uTexture;
@@ -102,7 +103,7 @@ void main() {
 
   vec3 skyTint = vec3(0.92, 0.97, 1.0);
   vec3 ambient = 0.42 * baseCol * skyTint;
-  vec3 diffuse = 0.60 * max(diff, 0.15) * baseCol;
+  vec3 diffuse = 0.60 * max(diff, 0.15) * baseCol * uLightColor;
   vec3 specular = 0.04 * spec * vec3(1.0);
 
   vec3 litColor = ambient + diffuse + specular;
@@ -123,37 +124,47 @@ attribute vec3 aPosition;
 
 uniform mat4 uProjection;
 uniform mat4 uView;
-uniform mat4 uModelMatrix;
 
-varying vec3 vWorldPos;
+varying vec3 vWorldDir;
 
 void main() {
-    vec4 worldPos = uModelMatrix * vec4(aPosition, 1.0);
-    vWorldPos = aPosition; // Usiamo le coordinate locali per calcolare la direzione della cupola
+    // mat3 viewRotation = mat3(uView);
     
-    vec4 pos = uProjection * uView * worldPos;
-    // Forziamo il depth buffer al valore massimo (1.0) in modo che il cielo rimanga sempre dietro a tutto
-    gl_Position = pos.xyww; 
+    // vWorldDir = viewRotation * aPosition;
+	vWorldDir = aPosition;
+
+	// Rimuoviamo la traslazione dalla View Matrix mantenendo le rotazioni della camera
+    mat4 viewNoTranslation = uView;
+    viewNoTranslation[3] = vec4(0.0, 0.0, 0.0, 1.0);
+
+    // Rendering sullo sfondo col trick Z=W
+    vec4 pos = uProjection * viewNoTranslation * vec4(aPosition, 1.0);
+    gl_Position = pos.xyww;
 }
 `;
 
 export const SKY_FRAGMENT_SHADER = `
 precision mediump float;
 
-varying vec3 vWorldPos;
+varying vec3 vWorldDir;
 
 uniform vec3 uColorHorizon;
 uniform vec3 uColorZenith;
 
 void main() {
-    // Normalizziamo la direzione
-    vec3 dir = normalize(vWorldPos);
+    vec3 dir = normalize(vWorldDir);
     
-    // Interpoliamo dal colore dell'orizzonte allo zenit in base alla coordinata Y
-    float factor = clamp(dir.y, 0.0, 1.0);
-    float gradientFactor = pow(factor, 0.5); // Rende la transizione più morbida
+    // Convertiamo l'intervallo Y da [-1.0, 1.0] a [0.0, 1.0] per coprire tutta la sfera
+    float height = dir.y * 0.5 + 0.5;
+    
+    // Normalizziamo con clamp per sicurezza
+    height = clamp(height, 0.0, 1.0);
+    
+    // Curve smooth: rende la transizione più morbida
+    float factor = smoothstep(0.39, 0.5, height);
 
-    vec3 finalColor = mix(uColorHorizon, uColorZenith, gradientFactor);
+    vec3 finalColor = mix(uColorHorizon, uColorZenith, factor);
+    
     gl_FragColor = vec4(finalColor, 1.0);
 }
 `;

@@ -32,6 +32,7 @@ export class Renderer {
 		this.uView = this.gl.getUniformLocation(this.program, 'uView');
 		this.uProjection = this.gl.getUniformLocation(this.program, 'uProjection');
 		this.uLightDir = this.gl.getUniformLocation(this.program, 'uLightDir');
+		this.uLightColor = this.gl.getUniformLocation(this.program, "uLightColor");
 		this.uBaseColor = this.gl.getUniformLocation(this.program, 'uBaseColor');
 		this.uCameraPos = this.gl.getUniformLocation(this.program, 'uCameraPos');
 		this.uTexture = this.gl.getUniformLocation(this.program, 'uTexture');
@@ -51,7 +52,7 @@ export class Renderer {
 		this.uSkyView = this.gl.getUniformLocation(this.sky_program, 'uView');
 		this.uSkyModelMatrix = this.gl.getUniformLocation(this.sky_program, 'uModelMatrix');
 		this.uSkyColorHorizon = this.gl.getUniformLocation(this.sky_program, 'uColorHorizon');
-		this.uSkyColorZenhit = this.gl.getUniformLocation(this.sky_program, 'uColorZenith');
+		this.uSkyColorZenith = this.gl.getUniformLocation(this.sky_program, 'uColorZenith');
 
 		this.gl.enable(this.gl.DEPTH_TEST);
 		this.gl.enable(this.gl.BLEND);
@@ -76,6 +77,7 @@ export class Renderer {
 	render(camera, objects, skyboxMesh, options = {}) {
 		const gl = this.gl;
 		const lightDir = options.lightDir || [-0.35, 1.0, 0.25];
+		const lightColor = options.lightColor || [1.0, 1.0, 1.0];
 		const enableFog = Boolean(options.enableFog);
 		const uOpacity = options.opacity ?? 1.0;
 		const fogColor = options.fogColor || [0.84, 0.93, 0.98];
@@ -83,12 +85,10 @@ export class Renderer {
 		const fogFar = options.fogFar ?? 40.0;
 		const curvatureStrength = options.curvatureStrength ?? 0.05;
 		const curvatureOrigin = options.curvatureOrigin || [0, 0];
-		const uSkyColorHorizon = options.skyColorHorizon || [0.95, 0.65, 0.65]; // Rosa/Arancio
-		const uSkyColorZenith = options.skyColorZenith || [0.15, 0.35, 0.8]; // Blu Notte
+		const uSkyColorHorizon = options.skyColorHorizon || fogColor;
+		const uSkyColorZenith = options.skyColorZenith || [0.15, 0.4, 0.85];
 
-		gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
 		gl.clearColor(uSkyColorHorizon[0], uSkyColorHorizon[1], uSkyColorHorizon[2], 1.0);
-		gl.clearColor(uSkyColorZenith[0], uSkyColorZenith[1], uSkyColorZenith[2], 1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		const projection = mat4Perspective(
 			Math.PI / 4,
@@ -98,34 +98,23 @@ export class Renderer {
 		);
 		const view = camera.getViewMatrix();
 
-		// ========== Skybox ==========
+		// renderer.js
 		if (skyboxMesh && this.sky_program) {
 			gl.useProgram(this.sky_program);
 
-			// Togliamo il Translate dalla matrice di View per mantenere il cielo ancorato alla camera
-			const viewNoTranslation = new Float32Array(view);
-			viewNoTranslation[12] = 0;
-			viewNoTranslation[13] = 0;
-			viewNoTranslation[14] = 0;
+			gl.disable(gl.DEPTH_TEST);
 
-			gl.depthFunc(gl.LEQUAL);
-
-			// Passiamo le uniformi al Vertex Shader
+			// Uniforms
 			gl.uniformMatrix4fv(this.uSkyProjection, false, new Float32Array(projection));
-			gl.uniformMatrix4fv(this.uSkyView, false, viewNoTranslation);
+			gl.uniformMatrix4fv(this.uSkyView, false, new Float32Array(view));
 
-			// Matrice Model identità scalata per la dimensione del cubo
-			const skyModel = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
-			gl.uniformMatrix4fv(this.uSkyModelMatrix, false, skyModel);
-
-			// Colori sfumati (Orizzonte e Cima del cielo)
-			gl.uniform3f(this.uSkyColorHorizon, fogColor[0], fogColor[1], fogColor[2]);
-			gl.uniform3f(this.uSkyColorZenhit, 0.35, 0.58, 0.88);
+			gl.uniform3fv(this.uSkyColorHorizon, new Float32Array(uSkyColorHorizon));
+			gl.uniform3fv(this.uSkyColorZenith, new Float32Array(uSkyColorZenith));
 
 			setMeshAttributes(gl, this.sky_program, skyboxMesh);
 			drawMesh(gl, skyboxMesh);
 
-			gl.depthFunc(gl.LESS);
+			gl.enable(gl.DEPTH_TEST);
 		}
 		gl.useProgram(this.program);
 
@@ -133,6 +122,7 @@ export class Renderer {
 		gl.uniformMatrix4fv(this.uProjection, false, new Float32Array(projection));
 		gl.uniformMatrix4fv(this.uView, false, new Float32Array(view));
 		gl.uniform3f(this.uLightDir, lightDir[0], lightDir[1], lightDir[2]);
+		gl.uniform3fv(this.uLightColor, lightColor || [1.0, 1.0, 1.0]);
 		gl.uniform3f(this.uCameraPos, camera.position[0], camera.position[1], camera.position[2]);
 		gl.uniform1i(this.uEnableFog, enableFog);
 		gl.uniform3f(this.uFogColor, fogColor[0], fogColor[1], fogColor[2]);
@@ -231,22 +221,22 @@ export class Renderer {
 			drawSubGroup(opaqueIndices);
 
 			// 2. PASSO 2: Disegna gli ALBERI IN DISSOLVENZA (senza far vedere i triangoli interni)
-            if (transparentIndices.length > 0) {
-                gl.depthMask(false);
-                gl.enable(gl.CULL_FACE); // Attiva l'eliminazione delle facce nascoste
+			if (transparentIndices.length > 0) {
+				gl.depthMask(false);
+				gl.enable(gl.CULL_FACE); // Attiva l'eliminazione delle facce nascoste
 
-                // A) Prima disegnamo solo le facce posteriori (dietro) dell'albero
-                gl.cullFace(gl.FRONT);
-                drawSubGroup(transparentIndices);
+				// A) Prima disegnamo solo le facce posteriori (dietro) dell'albero
+				gl.cullFace(gl.FRONT);
+				drawSubGroup(transparentIndices);
 
-                // B) Poi disegnamo solo le facce anteriori (davanti/esterne)
-                gl.cullFace(gl.BACK);
-                drawSubGroup(transparentIndices);
+				// B) Poi disegnamo solo le facce anteriori (davanti/esterne)
+				gl.cullFace(gl.BACK);
+				drawSubGroup(transparentIndices);
 
-                // Ripristiniamo lo stato normale
-                gl.disable(gl.CULL_FACE);
-                gl.depthMask(true);
-            }
+				// Ripristiniamo lo stato normale
+				gl.disable(gl.CULL_FACE);
+				gl.depthMask(true);
+			}
 
 			gl.uniform1i(this.uUseInstancing, 0);
 		}

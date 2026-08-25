@@ -1,5 +1,3 @@
-// main.js: Orchestrazione scena con Player controller, Camera follow, Collisioni
-
 import { createCube, createCylinder } from './geometry.js';
 import { loadOBJ, computeBounds } from './objLoader.js';
 import { createMesh, loadTexture } from './shaderUtils.js';
@@ -73,67 +71,52 @@ function buildModelMatrix(bounds, options = {}) {
 }
 
 function createControlPanel(state, camera, canvas) {
-	const style = document.createElement('style');
-	style.textContent = `
-        .hud-root { position: fixed; inset: 0; pointer-events: none; z-index: 20; color: #f7f7f7; font-family: "Trebuchet MS", sans-serif; }
-        .hud-panel { pointer-events: auto; position: absolute; top: 12px; left: 12px; width: min(330px, calc(100vw - 24px));
-          background: linear-gradient(135deg, rgba(20, 28, 36, 0.92), rgba(20, 36, 24, 0.86)); border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 12px; padding: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); backdrop-filter: blur(4px); }
-        .hud-title { font-size: 15px; font-weight: 700; letter-spacing: 0.4px; margin-bottom: 8px; color: #ffe9a8; }
-        .hud-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 13px; }
-        .hud-row input[type="range"] { width: 130px; }
-        .hud-help { margin-top: 10px; font-size: 12px; line-height: 1.35; color: rgba(255, 255, 255, 0.84); }
-        .hud-mobile { pointer-events: auto; position: absolute; left: 12px; right: 12px; bottom: 12px;
-          display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
-        .move-pad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 6px; user-select: none; touch-action: none; }
-        .move-pad button { border: 0; border-radius: 10px; background: rgba(20, 28, 36, 0.74); color: #fff; font-size: 16px; font-weight: 700; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28); }
-        .look-pad { width: min(40vw, 190px); height: min(40vw, 190px); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.2);
-          background: radial-gradient(circle at center, rgba(155, 212, 255, 0.2), rgba(20, 28, 36, 0.55)); touch-action: none; position: relative; overflow: hidden; }
-        .look-pad span { position: absolute; left: 8px; bottom: 8px; font-size: 12px; color: rgba(255, 255, 255, 0.8); }
-        @media (min-width: 920px) { .hud-mobile { max-width: 540px; } }
-    `;
-	document.head.appendChild(style);
+	// 1. Inizializza dat.GUI
+	const gui = new dat.GUI({ width: 300 });
 
-	const root = document.createElement('div');
-	root.className = 'hud-root';
-	root.innerHTML = `
-    <section class="hud-panel">
-      <div class="hud-title">Animal Crossing Village</div>
-      <div class="hud-row"><label><input id="lightToggle" type="checkbox" checked /> Luce orbitante</label></div>
-      <div class="hud-row"><label><input id="fogToggle" type="checkbox" /> Advanced: fog</label></div>
-      <div class="hud-row"><span>Fog near</span><input id="fogNearRange" type="range" min="4" max="20" step="1" value="10" /></div>
-      <div class="hud-row"><span>Fog far</span><input id="fogFarRange" type="range" min="16" max="50" step="1" value="30" /></div>
-      <div class="hud-help" id="playerInfo">Player: 0.00, 0.00 | Camera: 0.00, 0.00, 0.00</div>
-      <div class="hud-help">Desktop: WASD per muovere, mouse look (click su canvas).<br>Mobile: pad sinistro movimento, pad destro look.</div>
-    </section>
-    <div class="hud-mobile">
-      <div class="move-pad" id="movePad">
-        <div></div><button data-key="w">W</button><div></div>
-        <button data-key="a">A</button><button data-key="s">S</button><button data-key="d">D</button>
-        <div></div><div></div><div></div>
-      </div>
-      <div class="look-pad" id="lookPad"><span>LOOK</span></div>
-    </div>`;
-	document.body.appendChild(root);
+	// --- CARTELLA ILLUMINAZIONE ---
+	const lightFolder = gui.addFolder('Illuminazione');
 
-	root.querySelector('#lightToggle').addEventListener(
-		'change',
-		(e) => (state.rotateLight = e.target.checked)
-	);
-	root.querySelector('#fogToggle').addEventListener(
-		'change',
-		(e) => (state.enableFog = e.target.checked)
-	);
-	root.querySelector('#fogNearRange').addEventListener(
-		'input',
-		(e) => (state.fogNear = Number(e.target.value))
-	);
-	root.querySelector('#fogFarRange').addEventListener(
-		'input',
-		(e) => (state.fogFar = Math.max(state.fogNear + 1, Number(e.target.value)))
-	);
+	lightFolder.add(state, 'rotateLight').name('Luce Orbitante');
 
-	const playerInfo = root.querySelector('#playerInfo');
+	const timePresets = {
+		Mezzogiorno: { color: [1.0, 1.0, 0.95], intensity: 1.2 },
+		Alba: { color: [1.0, 0.75, 0.5], intensity: 0.8 },
+		Tramonto: { color: [0.95, 0.45, 0.2], intensity: 0.7 },
+		Notte: { color: [0.2, 0.3, 0.6], intensity: 0.3 }
+	};
+
+	state.timeOfDay = 'Mezzogiorno';
+	lightFolder
+		.add(state, 'timeOfDay', Object.keys(timePresets))
+		.name('Fase Giornata')
+		.onChange((presetName) => {
+			const p = timePresets[presetName];
+			state.lightColor[0] = p.color[0];
+			state.lightColor[1] = p.color[1];
+			state.lightColor[2] = p.color[2];
+			state.lightIntensity = p.intensity;
+			gui.updateDisplay();
+		});
+
+	lightFolder.addColor(state, 'lightColor').name('Colore Luce');
+	lightFolder.add(state, 'lightIntensity', 0.0, 2.0, 0.05).name('Intensità');
+	lightFolder.open();
+
+	// --- CARTELLA EFFETTI ---
+	const fogFolder = gui.addFolder('Effetti Avanzati');
+	fogFolder.add(state, 'enableFog').name('Abilita Nebbia');
+	fogFolder.add(state, 'fogNear', 1, 30, 1).name('Nebbia Vicina');
+
+	const fogFarController = fogFolder.add(state, 'fogFar', 10, 60, 1).name('Nebbia Lontana');
+	fogFolder.add(state, 'fogNear').onChange((val) => {
+		if (state.fogFar <= val) {
+			state.fogFar = val + 1;
+			fogFarController.updateDisplay();
+		}
+	});
+
+	// --- GESTIONE INPUT TASTIERA (WASD) ---
 	const inputActions = {
 		moveForward: false,
 		moveBackward: false,
@@ -141,58 +124,42 @@ function createControlPanel(state, camera, canvas) {
 		moveRight: false
 	};
 
-	// Gestione unificata Mappatura Tasti Desktop
 	const keyMap = { w: 'moveForward', s: 'moveBackward', a: 'moveLeft', d: 'moveRight' };
+
 	const handleKey = (e, isDown) => {
-		const action = keyMap[e.key.toLowerCase()];
-		if (action) inputActions[action] = isDown;
+		// Se l'utente sta scrivendo in un campo di testo (es. un input di dat.gui), ignora i tasti WASD
+		if (
+			e.target.tagName === 'INPUT' &&
+			(e.target.type === 'text' || e.target.type === 'number')
+		) {
+			return;
+		}
+
+		const key = e.key.toLowerCase();
+		const action = keyMap[key];
+		if (action) {
+			inputActions[action] = isDown;
+			// Previene lo scorrimento della pagina con frecce/tasti se necessario
+			if (['w', 'a', 's', 'd'].includes(key)) {
+				e.preventDefault();
+			}
+		}
 	};
+
 	window.addEventListener('keydown', (e) => handleKey(e, true));
 	window.addEventListener('keyup', (e) => handleKey(e, false));
 
-	// Touch Pad Movimento Mobile
-	root.querySelectorAll('.move-pad button').forEach((btn) => {
-		const action = keyMap[btn.dataset.key];
-		if (!action) return;
-		const setAction = (v) => (e) => {
-			e.preventDefault();
-			inputActions[action] = v;
-		};
-		['mousedown', 'touchstart'].forEach((ev) =>
-			btn.addEventListener(ev, setAction(true), { passive: false })
-		);
-		['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((ev) =>
-			btn.addEventListener(ev, setAction(false), { passive: false })
-		);
+	// Toglie il focus dagli elementi di dat.gui quando si clicca sulla scena
+	canvas.addEventListener('pointerdown', () => {
+		if (document.activeElement && document.activeElement.blur) {
+			document.activeElement.blur();
+		}
 	});
-
-	// Touch Pad Look
-	const lookPad = root.querySelector('#lookPad');
-	let lookDragging = false,
-		lookX = 0,
-		lookY = 0;
-	lookPad.addEventListener('pointerdown', (e) => {
-		lookDragging = true;
-		lookX = e.clientX;
-		lookY = e.clientY;
-		lookPad.setPointerCapture(e.pointerId);
-	});
-	lookPad.addEventListener('pointermove', (e) => {
-		if (!lookDragging) return;
-		camera.look(e.clientX - lookX, e.clientY - lookY, 0.6);
-		lookX = e.clientX;
-		lookY = e.clientY;
-		e.preventDefault();
-	});
-	const stopLook = () => (lookDragging = false);
-	['pointerup', 'pointercancel'].forEach((ev) => lookPad.addEventListener(ev, stopLook));
 
 	return {
 		inputActions,
 		updateInfo(player, camera) {
-			const p = player.position,
-				c = camera.position;
-			playerInfo.textContent = `Player: ${p[0].toFixed(2)}, ${p[2].toFixed(2)} | Camera: ${c[0].toFixed(2)}, ${c[1].toFixed(2)}, ${c[2].toFixed(2)}`;
+			// Funzione hook per eventuali aggiornamenti
 		}
 	};
 }
@@ -298,22 +265,36 @@ async function main() {
 			modelMatrix: mat4Identity(),
 			color: [1, 1, 1],
 			texture: grassTexture,
-			invertUVY: true
+			invertUVY: true,
+			type: 'ground'
 		},
 		{
 			mesh: photoBoardMesh,
 			modelMatrix: photoBoardMatrix,
 			color: [1, 1, 1],
 			texture: photoTexture,
-			invertUVY: false
+			invertUVY: false,
+			type: 'photo'
 		},
-		{ mesh: signPostMesh, modelMatrix: photoPostMatrix, color: [0.57, 0.37, 0.15] },
+		{
+			mesh: signPostMesh,
+			modelMatrix: photoPostMatrix,
+			color: [0.57, 0.37, 0.15],
+			type: 'photo'
+		},
 		...frameParts.map((m) => ({ mesh: signPostMesh, modelMatrix: m, color: [0.71, 0.5, 0.22] }))
 	];
 
 	const addHousePart = (mesh, texture) => {
 		if (!mesh) return;
-		const go = new GameObject({ gl, mesh, texture, color: [1.0, 1.0, 1.0], invertUVY: true });
+		const go = new GameObject({
+			gl,
+			mesh,
+			texture,
+			color: [1.0, 1.0, 1.0],
+			invertUVY: true,
+			type: 'house'
+		});
 		go.modelMatrix = houseMatrix;
 		objects.splice(1, 0, go);
 	};
@@ -353,9 +334,15 @@ async function main() {
 		});
 	}
 
-	const state = { rotateLight: false, enableFog: false, fogNear: 9, fogFar: 23 };
-
-	const player = new PlayerController([0, 0, 9.0], 12);
+	const state = {
+		rotateLight: false,
+		lightColor: [1.0, 1.0, 0.95], // Colore RGB predefinito
+		lightIntensity: 1.0, // Moltiplicatore intensità
+		enableFog: false,
+		fogNear: 9,
+		fogFar: 23
+	};
+	const player = new PlayerController([0, 0, 9.0], 12); // TODO: abbassare la velocità x production
 	const camera = new Camera([0, 6.4, 6.6], [0, 0, 0], canvas);
 	camera.mode = 'rolling-follow';
 	camera.followTarget = player;
@@ -366,7 +353,7 @@ async function main() {
 	camera.smoothing = 0.0;
 
 	const hud = createControlPanel(state, camera, canvas);
-	const hudCanvas = createHUDCanvas({ worldRadius: 26 });
+	const hudCanvas = createHUDCanvas({ worldRadius: 50 });
 
 	const playerGO = new GameObject({
 		gl,
@@ -384,7 +371,7 @@ async function main() {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
 		lastTime = nowMs;
 
-		// 1. Movimento e Fisica
+		// Movimento e Fisica
 		const cameraForward = [
 			Math.sin(camera.yaw) * Math.cos(camera.pitch),
 			Math.sin(camera.pitch),
@@ -396,7 +383,7 @@ async function main() {
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
-		// 2. Calcolo opacità dinamica degli alberi vicini alla camera
+		// Calcolo opacità dinamica degli alberi vicini alla camera
 		const FADE_RADIUS = 3.5; // Distanza di sfumatura
 		for (let i = 0; i < treeColliders.length; i++) {
 			const tc = treeColliders[i].center;
@@ -412,7 +399,7 @@ async function main() {
 			treeOpacities[i] += (targetOpacity - treeOpacities[i]) * 0.1;
 		}
 
-		// 3. Aggiorna matrici Player
+		// Aggiorna matrici Player
 		playerGO.setModelMatrix(
 			buildModelMatrix(char.bounds, {
 				scaleMul: 0.72,
@@ -422,16 +409,32 @@ async function main() {
 			})
 		);
 
-		if (state.rotateLight) lightAngle += deltaTime * 0.65;
-		const lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
+		// Luci
+		let lightDir;
+		if (state.rotateLight) {
+			lightAngle += deltaTime * 0.65;
+			lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
+		} else {
+			// La tua luce frontale preferita
+			lightDir = [0.0, -0.5, -1.0];
+		}
+		// Calcolo del colore finale scalato per l'intensità
+		const finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
 
-		// 4. Rendering (passando treeOpacities aggiornato)
+		// if (state.rotateLight) lightAngle += deltaTime * 0.65;
+		// // const lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
+		// const lightDir = [0.0, -0.5, -1.0];
+
+		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
 			lightDir: lightDir,
+			lightColor: finalLightColor,
 			enableFog: state.enableFog,
 			fogColor: [0.7, 0.85, 0.95],
 			fogNear: state.fogNear,
 			fogFar: state.fogFar,
+			skyColorHorizon: [0.7, 0.85, 0.95], // colore nebbia
+			skyColorZenith: [0.15, 0.4, 0.85], // blu
 			curvatureStrength: 0.005,
 			curvatureOrigin: [player.position[0], player.position[2]],
 			treeData: {

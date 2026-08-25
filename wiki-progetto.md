@@ -409,6 +409,13 @@ Il file [progetto/hudCanvas.js](progetto/hudCanvas.js) crea una minimappa separa
 La minimappa usa un canvas 2D indipendente e viene posizionata con `position: fixed`.
 
 ## Stato delle impostazioni visive
+Per chiarire come funziona dat.GUI:
+
+    gui.add(object, 'property', min, max, step): crea uno slider automatico per i valori numerici.
+
+    gui.addColor(object, 'property'): rileva array di tipo [r, g, b] (con valori da 0 a 1 oppure da 0 a 255) e mostra un Color Picker visivo.
+
+    gui.add(object, 'property', Array): crea un menu a tendina con le opzioni specificate.
 
 Nel progetto ci sono gia` alcuni controlli per debug e tuning:
 
@@ -453,16 +460,4 @@ Questi sono i punti che oggi restano piu` sperimentali o incompleti:
 - Se una feature richiede piu` oggetti uguali, valuta subito l'instancing.
 - Se una feature cambia il terreno o la visione globale, decidi prima se e` solo grafica o anche gameplay.
 - Se una cosa ti sembra "troppo grossa", spezzala in geometria, rendering, collisione e UI.
-
-## Prossime sezioni che posso aggiungere
-
-Questo file e` pensato per crescere. Le sezioni piu` naturali da aggiungere dopo sono:
-
-- mappa completa della scena;
-- lista dei collider con disegno e coordinate;
-- schema delle texture;
-- note sul sistema di illuminazione;
-- TODO tecnici ordinati per priorita`;
-- spiegazione dettagliata di `renderer.js` e degli shader;
-- documentazione del formato OBJ usato dal progetto.
 

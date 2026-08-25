@@ -1,6 +1,3 @@
-// hudCanvas.js
-// Simple 2D HUD canvas: minimap + player info
-
 export function createHUDCanvas(opts = {}) {
   const size = opts.size || 180;
   const padding = 12;
@@ -9,7 +6,7 @@ export function createHUDCanvas(opts = {}) {
   canvas.height = size;
   canvas.style.position = 'fixed';
   canvas.style.right = padding + 'px';
-  canvas.style.top = padding + 'px';
+  canvas.style.bottom = padding + 'px';
   canvas.style.zIndex = 30;
   canvas.style.borderRadius = '12px';
   canvas.style.boxShadow = '0 8px 30px rgba(0,0,0,0.5)';
