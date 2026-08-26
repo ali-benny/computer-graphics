@@ -21,12 +21,20 @@ export function createHUDCanvas(opts = {}) {
     ctx,
     size,
     worldRadius: opts.worldRadius || 26,
+    housePosition: opts.housePosition || [0, 0, 0],
+    playerHeading: 0,
     bgColor: opts.bgColor || 'rgba(16,18,20,0.64)',
     tick() {},
-    draw(player, camera, treeColliders) {
+    draw(player, camera, treeColliders, playerVelocity = null) {
       const c = ctx;
       const w = canvas.width, h = canvas.height;
       c.clearRect(0, 0, w, h);
+
+      const cx = w * 0.5, cy = h * 0.42, r = Math.min(w, h) * 0.34;
+      const worldToMap = (position) => [
+        cx + (position[0] / this.worldRadius) * r,
+        cy + (position[2] / this.worldRadius) * r
+      ];
 
       // background
       c.fillStyle = this.bgColor;
@@ -34,7 +42,6 @@ export function createHUDCanvas(opts = {}) {
       c.fill();
 
       // minimap circle
-      const cx = w * 0.5, cy = h * 0.42, r = Math.min(w, h) * 0.34;
       c.beginPath();
       c.fillStyle = 'rgba(8,10,12,0.88)';
       c.arc(cx, cy, r, 0, Math.PI * 2);
@@ -44,21 +51,31 @@ export function createHUDCanvas(opts = {}) {
       if (treeColliders && treeColliders.length) {
         c.fillStyle = '#8abf6b';
         for (const t of treeColliders) {
-          const tx = cx + (t.center[0] / this.worldRadius) * r;
-          const tz = cy + (t.center[2] / this.worldRadius) * r * -1;
+          const [tx, tz] = worldToMap(t.center);
           c.beginPath();
           c.arc(tx, tz, 3, 0, Math.PI * 2);
           c.fill();
         }
       }
 
+      // Casa al centro della scena
+      const [houseX, houseZ] = worldToMap(this.housePosition);
+      c.fillStyle = '#e05252';
+      c.fillRect(houseX - 4, houseZ - 4, 8, 8);
+      c.strokeStyle = '#8f2525';
+      c.lineWidth = 1;
+      c.strokeRect(houseX - 4, houseZ - 4, 8, 8);
+
       // player
       if (player) {
-        const px = cx + (player[0] / this.worldRadius) * r;
-        const pz = cy + (player[2] / this.worldRadius) * r * -1;
+        const [px, pz] = worldToMap(player);
+        if (playerVelocity && Math.hypot(playerVelocity[0], playerVelocity[2]) > 0.001) {
+          // Canvas Y positivo coincide con la direzione +Z del mondo.
+          this.playerHeading = Math.atan2(playerVelocity[0], -playerVelocity[2]);
+        }
         c.save();
         c.translate(px, pz);
-        c.rotate(camera ? camera.yaw : 0);
+        c.rotate(this.playerHeading);
         c.fillStyle = '#ffd36b';
         c.beginPath();
         c.moveTo(0, -6);

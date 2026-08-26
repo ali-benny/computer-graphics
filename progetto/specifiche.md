@@ -32,3 +32,19 @@ Avvertenza 2
 Non si possono usare librerie diverse da quelle messe a disposizione durante il corso, mentre si raccomanda di utilizzare tutto quello che è stato messo a disposizione (glm_utils.js per il caricamento di file .obj, mesh_utils.js, webgl-utils.js, m4.js, dat.gui.js).
 Avvertenza 3
 Eventuali domande sul progetto o richieste di spiegazione verrano pubblicate sulla pagina delle FAQ del progetto, per cui consultarla prima di chiedere spiegazioni al docente. 
+
+
+# Project Frequently Asked Questions
+
+Sto lavorando in ambiente Linux e mi viene segnalato il seguente errore: gl.drawArrays: attempt to access out of range vertices in attribute 0 e non visualizza nulla; ho provato lo stesso codice anche in ambiente Windows e non solo non segnala alcun errore, ma visualizza tutto correttamente. Come mi devo comportare?
+
+Il problema è noto, e dipende dal fatto che in ambiente Windows tutto è più permissivo. L'errore: gl.drawArrays: attempt to access out of range vertices in attribute 0 spesso indica un errore di programmazione e significa che si è cercato di rendere un buffer che è troppo piccolo rispetto a quanto indicato nella gl.drawArrays.
+Ovviamente bisogna trovare e correggere l'errore, anche perché il progetto, una volta consegnato, verrà visionato in ambiente Linux; questo è quindi un alert per chi sviluppa in ambiente Windows!!! Prima di consegnare il progetto provatelo in ambiente Linux o Mac.
+
+Sulla ''fruibilità da tablet o mobile''; questo implica che tutti i movimenti o interazioni da tastiera devono essere possibili anche tramite click del mouse? Che nel caso mobile sarebbero le dita? Questo può essere sufficiente oppure ci sono altre modifiche da fare alle quali non ho pensato?
+
+Per la fruibilità da mobile si intende proprio avere un'attenzione al fatto di prevedere delle alternative ad eventuali funzionalità non gestibili su mobile, e se si usa la tastiera, si preveda un'alternativa su mobile.
+
+E' possibile utilizzare delle mesh scaricate da internet e non fatte da noi. Ne ho trovate alcune molto carine per il progetto, in particolare una per l'oggetto principale, però non ho utilizzato Blender e in più richiede qualche secondo iniziale per caricare il tutto ma poi procede tutto bene.
+
+È sicuramente permesso scaricare delle mesh da internet, ma anche se non specificato nel testo del progetto, mi aspetto che usiate Blender, anche solo per ritoccarle. Se ci mette un po' a caricarle, vuol dire che sono pesanti; magari potrebbe usare Blender per semplificarle, anche se un tempo di caricamento più o meno lungo ce lo si deve sempre aspettare. Un altro utilizzo in cui mi aspetto che tutti usiate Blender è per associare una texture ad una mesh usando gli algoritmi di uv-mapping di Blender. Se non lo deve fare per le mesh che ha trovato, lo potrebbe fare per qualche altra o potrebbe cambiare le texture di una che le ha già ricalcolando le coordinate uv. Come logica, tenga presente che il progetto serve per mettere in campo tutto quello che si è visto nel corso. 

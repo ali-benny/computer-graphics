@@ -284,7 +284,14 @@ async function main() {
 			sy: 1.6,
 			sz: frameDepth
 		},
-		{ x: hw + frameThickness * 0.5, y: 2.1, z: 0, sx: frameThickness, sy: 1.6, sz: frameDepth }
+		{
+			x: hw + frameThickness * 0.5,
+			y: 2.1,
+			z: 0,
+			sx: frameThickness,
+			sy: 1.6,
+			sz: frameDepth
+		}
 	].map((p) => composeSignPart(signBaseMatrix, p.x, p.y, p.z, p.sx, p.sy, p.sz));
 
 	const objects = [
@@ -383,7 +390,7 @@ async function main() {
 	camera.smoothing = 0.0;
 
 	const hud = createControlPanel(state, camera, canvas);
-	const hudCanvas = createHUDCanvas({ worldRadius: 50 });
+	const hudCanvas = createHUDCanvas({ worldRadius: 60 });
 
 	const playerGO = new GameObject({
 		gl,
@@ -451,10 +458,6 @@ async function main() {
 		// Calcolo del colore finale scalato per l'intensità
 		const finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
 
-		// if (state.rotateLight) lightAngle += deltaTime * 0.65;
-		// // const lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
-		// const lightDir = [0.0, -0.5, -1.0];
-
 		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
 			lightDir: lightDir,
@@ -478,7 +481,7 @@ async function main() {
 
 		// HUD 2D
 		hud.updateInfo(player, camera);
-		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders);
+		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders, player.velocity);
 
 		requestAnimationFrame(animate);
 	}

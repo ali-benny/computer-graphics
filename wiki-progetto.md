@@ -8,13 +8,15 @@ cosi` da poter capire rapidamente come funziona ogni pezzo senza dover rileggere
 
 Il progetto attuale implementa una piccola scena 3D in WebGL con:
 
-- terreno centrale a forma di disco;
+- terreno centrale a griglia, deformato visivamente a forma cilindrica;
 - casa importata da OBJ;
 - personaggio controllabile;
 - alberi istanziati;
 - camera in terza persona con follow;
 - collisioni base contro casa, alberi e confini del mondo;
-- luce dinamica, fog e curvatura cilindrica nel vertex shader;
+- luce dinamica con colore, intensità e rotazione configurabili;
+- fog e curvatura cilindrica nel vertex shader;
+- skybox cubica con gradiente verticale e preset per il momento della giornata;
 - HUD 2D con minimappa e controlli touch/mobile.
 
 Il punto di partenza principale e` [progetto/main.js](progetto/main.js), che orchestra caricamento risorse, costruzione scena e render loop.
@@ -28,6 +30,7 @@ E` il file che mette insieme tutto:
 - carica modelli e texture;
 - costruisce la scena;
 - crea player, camera e HUD;
+- crea e configura il pannello `dat.GUI` per luce, fog e preset temporali;
 - aggiorna il frame ad ogni `requestAnimationFrame`;
 - invia uniform e draw call a WebGL.
 
@@ -38,8 +41,11 @@ Gestisce l'inizializzazione WebGL e le uniform globali:
 - crea il contesto `webgl`;
 - compila e linka gli shader;
 - abilita `DEPTH_TEST`;
+- abilita il blending alpha;
 - gestisce resize canvas;
-- espone la funzione `render(...)` per disegnare una lista di oggetti.
+- limita il device pixel ratio a 2 per il resize;
+- gestisce shader separati per scena principale e skybox;
+- espone la funzione `render(...)` per disegnare skybox, oggetti normali e alberi istanziati.
 
 ### [progetto/shaderUtils.js](progetto/shaderUtils.js)
 
@@ -59,6 +65,7 @@ Genera geometrie base:
 - `createPlane(width, depth)`;
 - `createCube(size)`;
 - `createDisc(radius, radialSegments, ringSegments)`.
+- `createCylinder(width, depth, subdivisionsX, subdivisionsZ)`, che genera una griglia piana sufficientemente densa per la curvatura nel vertex shader.
 
 ### [progetto/objLoader.js](progetto/objLoader.js)
 
@@ -145,7 +152,8 @@ Le texture sono caricate separatamente per:
 
 Oltre ai modelli OBJ, il progetto costruisce manualmente:
 
-- disco del terreno con `createDisc(86, 96, 28)`;
+- griglia del terreno con `createCylinder(120, 120, 80, 80)`;
+- skybox cubica con `createCube(300)`;
 - cartello foto con `createPhotoBoardGeometry(1.2, 1.6)`;
 - palo e cornice del cartello con `createCube(1)`;
 - eventualmente altri oggetti base tramite le funzioni di `geometry.js`.
@@ -158,7 +166,8 @@ La scena contiene:
 - casa al centro;
 - personaggio giocabile;
 - cartello con foto;
-- 20 alberi istanziati in modo casuale attorno al centro.
+- 30 alberi istanziati in modo casuale attorno al centro;
+- skybox con colori configurabili per orizzonte e zenit.
 
 ## Come sono costruite le trasformazioni
 
@@ -202,12 +211,12 @@ In [progetto/main.js](progetto/main.js) la camera viene configurata cosi`:
 - `camera.mode = "rolling-follow"`;
 - `camera.followTarget = player`;
 - `camera.yaw = 0`;
-- `camera.rollingBackDistance = 6.6`;
-- `camera.rollingHeight = 6.4`;
-- `camera.rollingLookAhead = 1.2`;
-- `camera.smoothing = 0.12`;
+- `camera.rollingBackDistance = 8.0`;
+- `camera.rollingHeight = 3.5`;
+- `camera.rollingLookAhead = 0.0`;
+- `camera.smoothing = 0.0`;
 
-Questo significa che la camera segue il player dall'alto, con un leggero anticipo sul movimento.
+Questo significa che la camera segue il player da dietro e dall'alto, senza interpolazione della posizione e senza anticipo rispetto al movimento.
 
 ### Input camera
 
@@ -285,6 +294,7 @@ Le uniform attualmente usate sono:
 - `uView`;
 - `uProjection`;
 - `uLightDir`;
+- `uLightColor`;
 - `uBaseColor`;
 - `uCameraPos`;
 - `uTexture`;
@@ -297,21 +307,22 @@ Le uniform attualmente usate sono:
 - `uCurvatureStrength`;
 - `uCurvatureOrigin`;
 - `uUseInstancing`;
+- `uOpacity`;
 
 ### Vertex shader
 
 Nel vertex shader ci sono tre aspetti importanti:
 
 1. supporto all'instancing tramite 4 attributi `vec4` che costruiscono una matrice per istanza;
-2. deformazione cilindrica del terreno con `uCurvatureStrength` e `uCurvatureOrigin`;
-3. passaggio a fragment shader di normali, posizione in world space e UV.
+2. opacità indipendente per ogni istanza tramite `aInstanceOpacity`;
+3. deformazione cilindrica del terreno con `uCurvatureStrength` e `uCurvatureOrigin`;
+4. passaggio a fragment shader di normali, posizione in world space e UV.
 
-La curvatura e` applicata cosi`:
+La curvatura e` applicata in base alla distanza lungo l'asse Z rispetto all'origine:
 
 ```glsl
-vec2 deltaXZ = worldPos.xz - uCurvatureOrigin;
-float dist = length(deltaXZ);
-worldPos.y -= dist * dist * uCurvatureStrength;
+float distZ = worldPos.z - uCurvatureOrigin.y;
+worldPos.y -= distZ * distZ * uCurvatureStrength;
 ```
 
 ### Fragment shader
@@ -321,7 +332,10 @@ Il fragment shader fa:
 - lettura colore base o texture;
 - illuminazione ambient + diffusa + specular;
 - fog opzionale;
-- output finale con alpha pieno.
+- alpha cutout per le parti trasparenti delle texture;
+- output con alpha derivato dalla texture e dall'opacità dell'oggetto.
+
+Gli shader della skybox usano una seconda coppia vertex/fragment. Il fragment shader interpola il colore dell'orizzonte con quello dello zenit usando la direzione verticale del vertice.
 
 ### Mesh e draw
 
@@ -336,13 +350,13 @@ Il fragment shader fa:
 
 `drawMesh(...)` usa `gl.drawElements` con `UNSIGNED_INT`.
 
-`drawMeshInstanced(...)` usa `ANGLE_instanced_arrays` per disegnare gli alberi.
+`drawMeshInstanced(...)` usa `ANGLE_instanced_arrays` per disegnare gli alberi. Gli alberi opachi e quelli in dissolvenza vengono disegnati in passaggi distinti; per gli alberi trasparenti il depth write viene disabilitato e vengono renderizzate separatamente le facce anteriori e posteriori.
 
 ## Scene composition in main.js
 
 ### Ground
 
-Il terreno e` un disco grande e viene aggiunto come primo oggetto della lista `objects`.
+Il terreno e` una griglia piana di dimensione `120 x 120`, aggiunta come primo oggetto della lista `objects`. La texture `textures/grass.png` viene applicata alla griglia, mentre il vertex shader ne curva visivamente la superficie.
 
 ### Casa
 
@@ -353,10 +367,12 @@ Se il modello non contiene gruppi materiali, viene usata una mesh unica.
 
 Gli alberi sono gestiti in modo speciale:
 
-- vengono generati `TREE_COUNT = 20` alberi;
+- vengono generati `TREE_COUNT = 30` alberi;
 - ogni albero ha una matrice diversa;
 - le matrici sono memorizzate in `treeMatrices`;
-- il rendering avviene in un'unica draw call instanziata.
+- il rendering usa l'instancing;
+- ogni albero ha un valore di opacità aggiornato dinamicamente;
+- gli alberi vicini alla camera vengono dissolti per evitare che coprano il player.
 
 Per le collisioni, per ogni albero viene creato un collider cilindrico approssimato in `treeColliders`.
 
@@ -420,6 +436,9 @@ Per chiarire come funziona dat.GUI:
 Nel progetto ci sono gia` alcuni controlli per debug e tuning:
 
 - toggle della luce orbitante;
+- selezione del momento della giornata: Alba, Mezzogiorno, Tramonto e Notte;
+- color picker della luce;
+- slider per l'intensità della luce;
 - toggle del fog;
 - slider per `fogNear`;
 - slider per `fogFar`.
@@ -427,9 +446,15 @@ Nel progetto ci sono gia` alcuni controlli per debug e tuning:
 I valori iniziali dello stato sono:
 
 - `rotateLight: false`;
-- `enableFog: true`;
+- `lightColor: [1.0, 1.0, 0.95]`;
+- `lightIntensity: 1.0`;
+- `skyColorHorizon: [0.7, 0.85, 0.95]`;
+- `skyColorZenith: [0.15, 0.4, 0.85]`;
+- `enableFog: false`;
 - `fogNear: 9`;
 - `fogFar: 23`.
+
+La selezione di un preset aggiorna insieme colore e intensita` della luce e i colori della skybox. La luce puo` inoltre ruotare attorno alla scena quando `rotateLight` e` attivo.
 
 ## Punti forti attuali
 
@@ -439,6 +464,9 @@ I valori iniziali dello stato sono:
 - camera in terza persona funzionante;
 - collisioni separate per tipi diversi di collider;
 - instancing degli alberi gia` presente;
+- dissolvenza degli alberi vicini alla camera;
+- skybox con gradiente e variazione temporale;
+- illuminazione parametrica tramite `dat.GUI`;
 - HUD separato dal rendering 3D.
 
 ## Limiti attuali / cose da migliorare
@@ -448,7 +476,7 @@ Questi sono i punti che oggi restano piu` sperimentali o incompleti:
 - le proporzioni dei modelli dipendono ancora molto da fattori empirici;
 - il mondo e` ancora abbastanza piccolo e molto centrale;
 - la curvatura del mondo e` solo visiva, non completamente integrata con tutto il gameplay;
-- il cielo non e` un vero skybox o dome;
+- la skybox e` una geometria cubica con gradiente procedurale, non una cubemap texturizzata;
 - l'acqua e i laghetti non hanno ancora una rappresentazione dedicata;
 - le strade e le zone di materiale diverso non sono ancora organizzate come sistema formale;
 - le collisioni sono semplici e basate su approssimazioni geometriche.
