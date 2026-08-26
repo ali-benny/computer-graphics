@@ -80,10 +80,30 @@ function createControlPanel(state, camera, canvas) {
 	lightFolder.add(state, 'rotateLight').name('Luce Orbitante');
 
 	const timePresets = {
-		Mezzogiorno: { color: [1.0, 1.0, 0.95], intensity: 1.2 },
-		Alba: { color: [1.0, 0.75, 0.5], intensity: 0.8 },
-		Tramonto: { color: [0.95, 0.45, 0.2], intensity: 0.7 },
-		Notte: { color: [0.2, 0.3, 0.6], intensity: 0.3 }
+		Alba: {
+			color: [1.0, 0.75, 0.5],
+			intensity: 0.8,
+			skyColorHorizon: [0.95, 0.6, 0.4],
+			skyColorZenith: [0.3, 0.35, 0.6]
+		},
+		Mezzogiorno: {
+			color: [1.0, 1.0, 0.95],
+			intensity: 1.2,
+			skyColorHorizon: [0.7, 0.85, 0.95],
+			skyColorZenith: [0.15, 0.4, 0.85]
+		},
+		Tramonto: {
+			color: [0.95, 0.45, 0.2],
+			intensity: 0.7,
+			skyColorHorizon: [0.9, 0.4, 0.2],
+			skyColorZenith: [0.15, 0.15, 0.4]
+		},
+		Notte: {
+			color: [0.2, 0.3, 0.6],
+			intensity: 0.3,
+			skyColorHorizon: [0.08, 0.1, 0.2],
+			skyColorZenith: [0.01, 0.02, 0.08]
+		}
 	};
 
 	state.timeOfDay = 'Mezzogiorno';
@@ -92,10 +112,20 @@ function createControlPanel(state, camera, canvas) {
 		.name('Fase Giornata')
 		.onChange((presetName) => {
 			const p = timePresets[presetName];
+			// aggiorna valori luce
 			state.lightColor[0] = p.color[0];
 			state.lightColor[1] = p.color[1];
 			state.lightColor[2] = p.color[2];
 			state.lightIntensity = p.intensity;
+
+			// aggiorna colori skybox
+			state.skyColorHorizon[0] = p.skyColorHorizon[0];
+			state.skyColorHorizon[1] = p.skyColorHorizon[1];
+			state.skyColorHorizon[2] = p.skyColorHorizon[2];
+
+			state.skyColorZenith[0] = p.skyColorZenith[0];
+			state.skyColorZenith[1] = p.skyColorZenith[1];
+			state.skyColorZenith[2] = p.skyColorZenith[2];
 			gui.updateDisplay();
 		});
 
@@ -158,9 +188,7 @@ function createControlPanel(state, camera, canvas) {
 
 	return {
 		inputActions,
-		updateInfo(player, camera) {
-			// Funzione hook per eventuali aggiornamenti
-		}
+		updateInfo(player, camera) {}
 	};
 }
 
@@ -336,8 +364,10 @@ async function main() {
 
 	const state = {
 		rotateLight: false,
-		lightColor: [1.0, 1.0, 0.95], // Colore RGB predefinito
+		lightColor: [1.0, 1.0, 0.95],
 		lightIntensity: 1.0, // Moltiplicatore intensità
+		skyColorHorizon: [0.7, 0.85, 0.95],
+		skyColorZenith: [0.15, 0.4, 0.85],
 		enableFog: false,
 		fogNear: 9,
 		fogFar: 23
@@ -430,11 +460,11 @@ async function main() {
 			lightDir: lightDir,
 			lightColor: finalLightColor,
 			enableFog: state.enableFog,
-			fogColor: [0.7, 0.85, 0.95],
+			fogColor: state.skyColorHorizon, // [0.7, 0.85, 0.95]
 			fogNear: state.fogNear,
 			fogFar: state.fogFar,
-			skyColorHorizon: [0.7, 0.85, 0.95], // colore nebbia
-			skyColorZenith: [0.15, 0.4, 0.85], // blu
+			skyColorHorizon: state.skyColorHorizon, // colore nebbia
+			skyColorZenith: state.skyColorZenith,
 			curvatureStrength: 0.005,
 			curvatureOrigin: [player.position[0], player.position[2]],
 			treeData: {
@@ -446,7 +476,7 @@ async function main() {
 			}
 		});
 
-		// 5. HUD 2D
+		// HUD 2D
 		hud.updateInfo(player, camera);
 		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders);
 
