@@ -25,7 +25,6 @@ const TEXTURE_PATHS = {
 
 // Collider statici di base (Gli alberi generati verranno aggiunti dinamicamente)
 const STATIC_COLLIDERS = [
-	{ type: 'aabb', name: 'house', min: [-3.5, 0, -3.0], max: [3.5, 3.0, 2.5] },
 	{ type: 'boundsCircle', name: 'worldBoundCircle', center: [0, 0, 0], radius: 100 }
 ];
 
@@ -68,6 +67,26 @@ function buildModelMatrix(bounds, options = {}) {
 			)
 		)
 	);
+}
+
+function getTransformedBoundsXZ(bounds, matrix) {
+	const min = [Infinity, Infinity];
+	const max = [-Infinity, -Infinity];
+
+	for (const x of [bounds.min[0], bounds.max[0]]) {
+		for (const y of [bounds.min[1], bounds.max[1]]) {
+			for (const z of [bounds.min[2], bounds.max[2]]) {
+				const worldX = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
+				const worldZ = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
+				min[0] = Math.min(min[0], worldX);
+				min[1] = Math.min(min[1], worldZ);
+				max[0] = Math.max(max[0], worldX);
+				max[1] = Math.max(max[1], worldZ);
+			}
+		}
+	}
+
+	return { min: [min[0], 0, min[1]], max: [max[0], 3, max[1]] };
 }
 
 function createControlPanel(state, camera, canvas) {
@@ -249,6 +268,8 @@ async function main() {
 		rotateY: -Math.PI / 2,
 		translate: [0, 0, 0]
 	});
+	const houseBoundsXZ = getTransformedBoundsXZ(houseBounds, houseMatrix);
+	const houseCollider = { type: 'aabb', name: 'house', ...houseBoundsXZ };
 
 	// Costruzione Bacheca Foto con loop per evitare ridondanze
 	const signBaseMatrix = mat4Multiply(mat4Translate(4.1, 0.0, -2.0), mat4RotateY(-0.3));
@@ -319,6 +340,7 @@ async function main() {
 		},
 		...frameParts.map((m) => ({ mesh: signPostMesh, modelMatrix: m, color: [0.71, 0.5, 0.22] }))
 	];
+	const houseObjects = [];
 
 	const addHousePart = (mesh, texture) => {
 		if (!mesh) return;
@@ -331,6 +353,8 @@ async function main() {
 			type: 'house'
 		});
 		go.modelMatrix = houseMatrix;
+		go.opacity = 1.0;
+		houseObjects.push(go);
 		objects.splice(1, 0, go);
 	};
 	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
@@ -416,12 +440,29 @@ async function main() {
 		];
 		const cameraRight = [Math.cos(camera.yaw), 0, Math.sin(camera.yaw)];
 
-		const colliders = STATIC_COLLIDERS.concat(treeColliders);
+		const colliders = STATIC_COLLIDERS.concat(houseCollider, treeColliders);
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
-		// Calcolo opacità dinamica degli alberi vicini alla camera
+		// Calcolo opacità dinamica degli oggetti vicini alla camera
 		const FADE_RADIUS = 3.5; // Distanza di sfumatura
+		const closestHouseX = Math.max(
+			houseCollider.min[0],
+			Math.min(camera.position[0], houseCollider.max[0])
+		);
+		const closestHouseZ = Math.max(
+			houseCollider.min[2],
+			Math.min(camera.position[2], houseCollider.max[2])
+		);
+		const houseDistance = Math.hypot(
+			camera.position[0] - closestHouseX,
+			camera.position[2] - closestHouseZ
+		);
+		const houseOpacity = houseDistance < FADE_RADIUS ? 0.0 : 1.0;
+		for (const houseObject of houseObjects) {
+			houseObject.opacity += (houseOpacity - houseObject.opacity) * 0.1;
+		}
+
 		for (let i = 0; i < treeColliders.length; i++) {
 			const tc = treeColliders[i].center;
 			const dx = tc[0] - camera.position[0];

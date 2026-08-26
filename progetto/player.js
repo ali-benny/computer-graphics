@@ -152,7 +152,24 @@ export class PlayerController {
     const dz = pz - closestZ;
     const distSq = dx * dx + dz * dz;
 
-    if (distSq < r * r && distSq > 0.0001) {
+    if (distSq < r * r) {
+      if (distSq <= 0.0001) {
+        const distances = [
+          { distance: px - min[0], normal: [-1, 0] },
+          { distance: max[0] - px, normal: [1, 0] },
+          { distance: pz - min[2], normal: [0, -1] },
+          { distance: max[2] - pz, normal: [0, 1] }
+        ];
+        const nearest = distances.reduce((current, candidate) =>
+          candidate.distance < current.distance ? candidate : current
+        );
+        return [
+          px + nearest.normal[0] * (nearest.distance + r),
+          pos[1],
+          pz + nearest.normal[1] * (nearest.distance + r)
+        ];
+      }
+
       // Collisione: spingi fuori
       const dist = Math.sqrt(distSq);
       const pushDist = r - dist;
