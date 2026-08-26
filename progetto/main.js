@@ -7,26 +7,25 @@ import { PlayerController } from './player.js';
 import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
 import GameObject from './gameObject.js';
 import { createHUDCanvas } from './hudCanvas.js';
-
-const MODEL_PATHS = {
-	char: 'obj/animal-crossing-character/source/char.obj',
-	house: 'obj/animal-crossing-house/source/house.obj',
-	tree: 'obj/animal-crossing-pine-tree/source/base.obj'
-};
-
-const TEXTURE_PATHS = {
-	houseWallsRoof: './obj/animal-crossing-house/textures/Base_Color_1.jpg',
-	houseDoorWindows: './obj/animal-crossing-house/textures/Base_Color.jpg',
-	char: './obj/animal-crossing-character/textures/character_ac_low_DefaultMaterial_BaseColor.png',
-	photo: './textures/mia-foto.jpg',
-	tree: './obj/animal-crossing-pine-tree/texture/texture_diffuse.png',
-	grass: './textures/grass.png'
-};
-
-// Collider statici di base (Gli alberi generati verranno aggiunti dinamicamente)
-const STATIC_COLLIDERS = [
-	{ type: 'boundsCircle', name: 'worldBoundCircle', center: [0, 0, 0], radius: 100 }
-];
+import {
+	CAMERA,
+	CLOUDS,
+	DEFAULT_FOG_ENABLED,
+	DEFAULT_LIGHT_COLOR,
+	DEFAULT_LIGHT_INTENSITY,
+	DEFAULT_ROTATE_LIGHT,
+	DEFAULT_SKY_COLOR_HORIZON,
+	DEFAULT_SKY_COLOR_ZENITH,
+	DEFAULT_TIME_OF_DAY,
+	FOG,
+	GROUND,
+	MODEL_PATHS,
+	RENDERING,
+	STATIC_COLLIDERS,
+	TEXTURE_PATHS,
+	TIME_PRESETS,
+	TREES
+} from './const.js';
 
 // ====== UTILITY FUNCTIONS ======
 
@@ -98,39 +97,12 @@ function createControlPanel(state, camera, canvas) {
 
 	lightFolder.add(state, 'rotateLight').name('Luce Orbitante');
 
-	const timePresets = {
-		Alba: {
-			color: [1.0, 0.75, 0.5],
-			intensity: 0.8,
-			skyColorHorizon: [0.95, 0.6, 0.4],
-			skyColorZenith: [0.3, 0.35, 0.6]
-		},
-		Mezzogiorno: {
-			color: [1.0, 1.0, 0.95],
-			intensity: 1.2,
-			skyColorHorizon: [0.7, 0.85, 0.95],
-			skyColorZenith: [0.15, 0.4, 0.85]
-		},
-		Tramonto: {
-			color: [0.95, 0.45, 0.2],
-			intensity: 0.7,
-			skyColorHorizon: [0.9, 0.4, 0.2],
-			skyColorZenith: [0.15, 0.15, 0.4]
-		},
-		Notte: {
-			color: [0.2, 0.3, 0.6],
-			intensity: 0.3,
-			skyColorHorizon: [0.08, 0.1, 0.2],
-			skyColorZenith: [0.01, 0.02, 0.08]
-		}
-	};
-
-	state.timeOfDay = 'Mezzogiorno';
+	state.timeOfDay = DEFAULT_TIME_OF_DAY;
 	lightFolder
-		.add(state, 'timeOfDay', Object.keys(timePresets))
+		.add(state, 'timeOfDay', Object.keys(TIME_PRESETS))
 		.name('Fase Giornata')
 		.onChange((presetName) => {
-			const p = timePresets[presetName];
+			const p = TIME_PRESETS[presetName];
 			// aggiorna valori luce
 			state.lightColor[0] = p.color[0];
 			state.lightColor[1] = p.color[1];
@@ -155,9 +127,11 @@ function createControlPanel(state, camera, canvas) {
 	// --- CARTELLA EFFETTI ---
 	const fogFolder = gui.addFolder('Effetti Avanzati');
 	fogFolder.add(state, 'enableFog').name('Abilita Nebbia');
-	fogFolder.add(state, 'fogNear', 1, 30, 1).name('Nebbia Vicina');
+	fogFolder.add(state, 'fogNear', FOG.nearMin, FOG.nearMax, 1).name('Nebbia Vicina');
 
-	const fogFarController = fogFolder.add(state, 'fogFar', 10, 60, 1).name('Nebbia Lontana');
+	const fogFarController = fogFolder
+		.add(state, 'fogFar', FOG.farMin, FOG.farMax, 1)
+		.name('Nebbia Lontana');
 	fogFolder.add(state, 'fogNear').onChange((val) => {
 		if (state.fogFar <= val) {
 			state.fogFar = val + 1;
@@ -229,10 +203,11 @@ async function main() {
 	const renderer = new Renderer(canvas);
 	const gl = renderer.gl;
 
-	const [houseGeometry, char, tree] = await Promise.all([
+	const [houseGeometry, char, tree, cloud] = await Promise.all([
 		loadOBJ(MODEL_PATHS.house),
 		loadModelWithResources(gl, MODEL_PATHS.char, TEXTURE_PATHS.char),
-		loadModelWithResources(gl, MODEL_PATHS.tree, TEXTURE_PATHS.tree)
+		loadModelWithResources(gl, MODEL_PATHS.tree, TEXTURE_PATHS.tree),
+		loadOBJ(MODEL_PATHS.cloud)
 	]);
 
 	const houseBounds = computeBounds(houseGeometry.positions);
@@ -257,10 +232,13 @@ async function main() {
 		loadTexture(gl, TEXTURE_PATHS.grass).catch(() => null)
 	]);
 
-	const groundMesh = createMesh(gl, createCylinder(120, 120, 80, 80));
+	const groundMesh = createMesh(
+		gl,
+		createCylinder(GROUND.width, GROUND.depth, GROUND.subdivisionsX, GROUND.subdivisionsZ)
+	);
 	const photoBoardMesh = createMesh(gl, createPhotoBoardGeometry(1.2, 1.6));
 	const signPostMesh = createMesh(gl, createCube(1));
-	const skyboxMesh = createMesh(gl, createCube(300));
+	const skyboxMesh = createMesh(gl, createCube(RENDERING.skyboxSize));
 
 	const houseMatrix = buildModelMatrix(houseBounds, {
 		scaleMul: 2,
@@ -270,6 +248,38 @@ async function main() {
 	});
 	const houseBoundsXZ = getTransformedBoundsXZ(houseBounds, houseMatrix);
 	const houseCollider = { type: 'aabb', name: 'house', ...houseBoundsXZ };
+
+	// Nuvolette
+	const cloudBounds = computeBounds(cloud.positions);
+	const cloudMesh = createMesh(gl, cloud);
+	const cloudObjects = [];
+
+	for (let i = 0; i < CLOUDS.count; i++) {
+		const cloudScale = CLOUDS.minScale + Math.random() * CLOUDS.scaleRange;
+
+		const cloudPosition = [
+			-CLOUDS.areaX + Math.random() * CLOUDS.areaX * 2,
+			CLOUDS.minHeight + Math.random() * CLOUDS.heightRange,
+			-CLOUDS.areaZ + Math.random() * CLOUDS.areaZ * 2
+		];
+		const cloudVelocityX = CLOUDS.minVelocityX + Math.random() * CLOUDS.velocityRangeX;
+
+		cloudObjects.push({
+			mesh: cloudMesh,
+			position: cloudPosition,
+			scale: cloudScale,
+			velocityX: cloudVelocityX,
+			rotationY: CLOUDS.rotationY,
+			modelMatrix: buildModelMatrix(cloudBounds, {
+				scaleMul: cloudScale,
+				translate: cloudPosition,
+				rotateY: CLOUDS.rotationY
+			}),
+			color: [1.0, 1.0, 1.0],
+			opacity: CLOUDS.opacity,
+			type: 'cloud'
+		});
+	}
 
 	// Costruzione Bacheca Foto con loop per evitare ridondanze
 	const signBaseMatrix = mat4Multiply(mat4Translate(4.1, 0.0, -2.0), mat4RotateY(-0.3));
@@ -324,6 +334,7 @@ async function main() {
 			invertUVY: true,
 			type: 'ground'
 		},
+		...cloudObjects,
 		{
 			mesh: photoBoardMesh,
 			modelMatrix: photoBoardMatrix,
@@ -361,17 +372,16 @@ async function main() {
 	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
 
 	// Generazione Alberi Instanziati
-	const TREE_COUNT = 30;
-	const treeMatrices = new Float32Array(TREE_COUNT * 16);
-	const treeOpacities = new Float32Array(TREE_COUNT);
+	const treeMatrices = new Float32Array(TREES.count * 16);
+	const treeOpacities = new Float32Array(TREES.count);
 	const treeColliders = [];
 
-	for (let i = 0; i < TREE_COUNT; i++) {
+	for (let i = 0; i < TREES.count; i++) {
 		const angle = Math.random() * Math.PI * 2;
-		const radius = 4 + Math.random() * 18;
+		const radius = TREES.minRadius + Math.random() * TREES.radiusRange;
 		const x = Math.cos(angle) * radius;
 		const z = Math.sin(angle) * radius;
-		const scaleMul = 1.1 + Math.random() * 1.1;
+		const scaleMul = TREES.minScale + Math.random() * TREES.scaleRange;
 		const rot = Math.random() * Math.PI * 2;
 
 		const m = buildModelMatrix(tree.bounds, {
@@ -394,27 +404,27 @@ async function main() {
 	}
 
 	const state = {
-		rotateLight: false,
-		lightColor: [1.0, 1.0, 0.95],
-		lightIntensity: 1.0, // Moltiplicatore intensità
-		skyColorHorizon: [0.7, 0.85, 0.95],
-		skyColorZenith: [0.15, 0.4, 0.85],
-		enableFog: false,
-		fogNear: 9,
-		fogFar: 23
+		rotateLight: DEFAULT_ROTATE_LIGHT,
+		lightColor: [...DEFAULT_LIGHT_COLOR],
+		lightIntensity: DEFAULT_LIGHT_INTENSITY,
+		skyColorHorizon: [...DEFAULT_SKY_COLOR_HORIZON],
+		skyColorZenith: [...DEFAULT_SKY_COLOR_ZENITH],
+		enableFog: DEFAULT_FOG_ENABLED,
+		fogNear: FOG.near,
+		fogFar: FOG.far
 	};
-	const player = new PlayerController([0, 0, 9.0], 12); // TODO: abbassare la velocità x production
-	const camera = new Camera([0, 6.4, 6.6], [0, 0, 0], canvas);
+	const player = new PlayerController([0, 0, 9.0], 12);
+	const camera = new Camera(CAMERA.position, [0, 0, 0], canvas);
 	camera.mode = 'rolling-follow';
 	camera.followTarget = player;
 	camera.yaw = 0;
-	camera.rollingBackDistance = 8.0;
-	camera.rollingHeight = 3.5;
-	camera.rollingLookAhead = 0.0;
-	camera.smoothing = 0.0;
+	camera.rollingBackDistance = CAMERA.rollingBackDistance;
+	camera.rollingHeight = CAMERA.rollingHeight;
+	camera.rollingLookAhead = CAMERA.rollingLookAhead;
+	camera.smoothing = CAMERA.smoothing;
 
 	const hud = createControlPanel(state, camera, canvas);
-	const hudCanvas = createHUDCanvas({ worldRadius: 60 });
+	const hudCanvas = createHUDCanvas({ worldRadius: RENDERING.worldRadius });
 
 	const playerGO = new GameObject({
 		gl,
@@ -432,6 +442,24 @@ async function main() {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
 		lastTime = nowMs;
 
+		// Movimento Nuvolette
+		for (const cloudObject of cloudObjects) {
+			cloudObject.position[0] += cloudObject.velocityX * deltaTime;
+
+			// Effetto Pac-Man
+			if (cloudObject.position[0] > CLOUDS.areaX + CLOUDS.wrapMargin) {
+				cloudObject.position[0] = -CLOUDS.areaX - CLOUDS.wrapMargin;
+			} else if (cloudObject.position[0] < -CLOUDS.areaX - CLOUDS.wrapMargin) {
+				cloudObject.position[0] = CLOUDS.areaX + CLOUDS.wrapMargin;
+			}
+
+			cloudObject.modelMatrix = buildModelMatrix(cloudBounds, {
+				scaleMul: cloudObject.scale,
+				translate: cloudObject.position,
+				rotateY: cloudObject.rotationY
+			});
+		}
+
 		// Movimento e Fisica
 		const cameraForward = [
 			Math.sin(camera.yaw) * Math.cos(camera.pitch),
@@ -445,7 +473,6 @@ async function main() {
 		camera.updatePosition(deltaTime);
 
 		// Calcolo opacità dinamica degli oggetti vicini alla camera
-		const FADE_RADIUS = 3.5; // Distanza di sfumatura
 		const closestHouseX = Math.max(
 			houseCollider.min[0],
 			Math.min(camera.position[0], houseCollider.max[0])
@@ -458,7 +485,7 @@ async function main() {
 			camera.position[0] - closestHouseX,
 			camera.position[2] - closestHouseZ
 		);
-		const houseOpacity = houseDistance < FADE_RADIUS ? 0.0 : 1.0;
+		const houseOpacity = houseDistance < TREES.fadeRadius ? 0.0 : 1.0;
 		for (const houseObject of houseObjects) {
 			houseObject.opacity += (houseOpacity - houseObject.opacity) * 0.1;
 		}
@@ -470,7 +497,7 @@ async function main() {
 			const distToCam = Math.sqrt(dx * dx + dz * dz);
 
 			let targetOpacity = 1.0;
-			if (distToCam < FADE_RADIUS) {
+			if (distToCam < TREES.fadeRadius) {
 				targetOpacity = 0.0;
 			}
 			// LERP per transizione morbida
@@ -509,14 +536,14 @@ async function main() {
 			fogFar: state.fogFar,
 			skyColorHorizon: state.skyColorHorizon, // colore nebbia
 			skyColorZenith: state.skyColorZenith,
-			curvatureStrength: 0.005,
+			curvatureStrength: RENDERING.curvatureStrength,
 			curvatureOrigin: [player.position[0], player.position[2]],
 			treeData: {
 				mesh: tree.mesh,
 				texture: tree.texture,
 				matrices: treeMatrices,
 				opacities: treeOpacities,
-				count: TREE_COUNT
+				count: TREES.count
 			}
 		});
 
