@@ -6,7 +6,6 @@ import { Camera } from './camera.js';
 import { PlayerController } from './player.js';
 import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
 import GameObject from './gameObject.js';
-import { createHUDCanvas } from './hudCanvas.js';
 import {
 	CAMERA,
 	CLOUDS,
@@ -424,7 +423,6 @@ async function main() {
 	camera.smoothing = CAMERA.smoothing;
 
 	const hud = createControlPanel(state, camera, canvas);
-	const hudCanvas = createHUDCanvas({ worldRadius: RENDERING.worldRadius });
 
 	const playerGO = new GameObject({
 		gl,
@@ -547,9 +545,7 @@ async function main() {
 			}
 		});
 
-		// HUD 2D
 		hud.updateInfo(player, camera);
-		if (hudCanvas) hudCanvas.draw(player.position, camera, treeColliders, player.velocity);
 
 		requestAnimationFrame(animate);
 	}

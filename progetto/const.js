@@ -14,13 +14,9 @@ export const TEXTURE_PATHS = {
 	grass: './textures/grass.png'
 };
 
-export const STATIC_COLLIDERS = [
-	{ type: 'boundsCircle', name: 'worldBoundCircle', center: [0, 0, 0], radius: 100 }
-];
-
 export const GROUND = {
-	width: 120,
-	depth: 120,
+	width: 100,
+	depth: 100,
 	subdivisionsX: 80,
 	subdivisionsZ: 80
 };
@@ -29,7 +25,7 @@ export const CLOUDS = {
 	count: 12,
 	areaX: 55,
 	areaZ: 35,
-	minHeight: 8,
+	minHeight: 7,
 	heightRange: 6,
 	minScale: 1.4,
 	scaleRange: 1.8,
@@ -41,9 +37,9 @@ export const CLOUDS = {
 };
 
 export const TREES = {
-	count: 30,
+	count: 50,
 	minRadius: 4,
-	radiusRange: 18,
+	radiusRange: 55,
 	minScale: 1.1,
 	scaleRange: 1.1,
 	fadeRadius: 3.5
@@ -98,6 +94,17 @@ export const TIME_PRESETS = {
 		skyColorZenith: [0.01, 0.02, 0.08]
 	}
 };
+
+export const STATIC_COLLIDERS = [
+    // Muro più in basso
+    { type: 'aabb', name: 'north', min: [-55, 0, 45], max: [55, 3, 55] },
+    // Muro più in alto
+    { type: 'aabb', name: 'south', min: [-55, 0, -55], max: [55, 3, -30] },
+    // Muro destra
+    { type: 'aabb', name: 'east', min: [30, 0, -55], max: [55, 3, 55] },
+    // Muro sinistra
+    { type: 'aabb', name: 'west', min: [-55, 0, -55], max: [-30, 3, 55] },
+];
 
 export const DEFAULT_TIME_OF_DAY = 'Mezzogiorno';
 export const DEFAULT_LIGHT_COLOR = [1.0, 1.0, 0.95];
