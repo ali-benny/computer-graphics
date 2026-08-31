@@ -86,6 +86,72 @@ function getTransformedBoundsXZ(bounds, matrix) {
 
 	return { min: [min[0], 0, min[1]], max: [max[0], 3, max[1]] };
 }
+function mobileControlsEnabled(inputActions) {
+	const touchPad = document.createElement('div');
+	touchPad.id = 'mobileTouchPad';
+	touchPad.style.cssText = `
+	  position: fixed;
+	  bottom: 20px;
+	  left: 20px;
+	  width: 120px;
+	  height: 120px;
+	  background: rgba(0, 0, 0, 0.3);
+	  border: 2px solid rgba(255, 255, 255, 0.5);
+	  border-radius: 50%;
+	  touch-action: none;
+	  display: none; /* Visibile solo su mobile */
+	  z-index: 100;
+	`;
+	document.body.appendChild(touchPad);
+	
+	let touchActive = false;
+	let touchStartX = 0, touchStartY = 0;
+	
+	touchPad.addEventListener('touchstart', (e) => {
+	  touchActive = true;
+	  const touch = e.touches[0];
+	  const rect = touchPad.getBoundingClientRect();
+	  touchStartX = touch.clientX - rect.left;
+	  touchStartY = touch.clientY - rect.top;
+	});
+	
+	touchPad.addEventListener('touchmove', (e) => {
+	  if (!touchActive) return;
+	  const touch = e.touches[0];
+	  const rect = touchPad.getBoundingClientRect();
+	  const x = touch.clientX - rect.left - 60;
+	  const y = touch.clientY - rect.top - 60;
+	  const dist = Math.hypot(x, y);
+	  const maxDist = 50;
+	  
+	  if (dist > maxDist) {
+		const scale = maxDist / dist;
+		inputActions.moveForward = y * scale < -20;
+		inputActions.moveBackward = y * scale > 20;
+		inputActions.moveLeft = x * scale < -20;
+		inputActions.moveRight = x * scale > 20;
+	  }
+	});
+	
+	touchPad.addEventListener('touchend', () => {
+	  touchActive = false;
+	  inputActions.moveForward = false;
+	  inputActions.moveBackward = false;
+	  inputActions.moveLeft = false;
+	  inputActions.moveRight = false;
+	});
+	
+	// Mostra il touchpad solo su mobile
+	const isMobile = window.innerWidth <= 768 || window.matchMedia("(pointer: coarse)").matches;
+	if (isMobile) {
+	  touchPad.style.display = 'block';
+	}
+	
+	window.addEventListener('resize', () => {
+	  const isMobile = window.innerWidth <= 768;
+	  touchPad.style.display = isMobile ? 'block' : 'none';
+	});
+}
 
 function createControlPanel(state, camera, canvas) {
 	// 1. Inizializza dat.GUI
@@ -119,7 +185,6 @@ function createControlPanel(state, camera, canvas) {
 			gui.updateDisplay();
 		});
 
-	lightFolder.addColor(state, 'lightColor').name('Colore Luce');
 	lightFolder.add(state, 'lightIntensity', 0.0, 2.0, 0.05).name('Intensità');
 	lightFolder.open();
 
@@ -177,6 +242,8 @@ function createControlPanel(state, camera, canvas) {
 			document.activeElement.blur();
 		}
 	});
+	
+	mobileControlsEnabled(inputActions);
 
 	return {
 		inputActions,
