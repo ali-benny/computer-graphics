@@ -1,6 +1,4 @@
-// renderer.js: Setup WebGL e render loop
-
-import { mat4Perspective, mat4Translate, mat4Scale, mat4Multiply } from './math.js';
+import { mat4Perspective } from './math.js';
 import {
 	createProgram,
 	VERTEX_SHADER,
@@ -9,8 +7,7 @@ import {
 	SKY_FRAGMENT_SHADER,
 	setMeshAttributes,
 	drawMesh,
-	drawMeshInstanced,
-	loadTexture
+	drawMeshInstanced
 } from './shaderUtils.js';
 
 export class Renderer {
@@ -98,13 +95,11 @@ export class Renderer {
 		);
 		const view = camera.getViewMatrix();
 
-		// renderer.js
 		if (skyboxMesh && this.sky_program) {
 			gl.useProgram(this.sky_program);
 
 			gl.disable(gl.DEPTH_TEST);
 
-			// Uniforms
 			gl.uniformMatrix4fv(this.uSkyProjection, false, new Float32Array(projection));
 			gl.uniformMatrix4fv(this.uSkyView, false, new Float32Array(view));
 
@@ -139,7 +134,6 @@ export class Renderer {
 
 			const useTexture = obj.texture ? true : false;
 			gl.uniform1i(this.uUseTexture, useTexture);
-			gl.uniform1i(this.uInvertUVY, obj.invertUVY ? 1 : 0); // true = 1, false = 0
 
 			if (obj.texture) {
 				gl.activeTexture(gl.TEXTURE0);
@@ -168,7 +162,6 @@ export class Renderer {
 				gl.bindTexture(gl.TEXTURE_2D, td.texture);
 				gl.uniform1i(this.uTexture, 0);
 			}
-			gl.uniform1i(this.uInvertUVY, 1);
 			gl.uniform3f(this.uBaseColor, 1.0, 1.0, 1.0);
 
 			setMeshAttributes(gl, this.program, td.mesh);
@@ -216,20 +209,20 @@ export class Renderer {
 				);
 			};
 
-			// 1. PASSO 1: Disegna prima gli ALBERI OPACHI (Depth Write attivo)
+			// Disegna prima gli ALBERI OPACHI (Depth Write attivo)
 			gl.depthMask(true);
 			drawSubGroup(opaqueIndices);
 
-			// 2. PASSO 2: Disegna gli ALBERI IN DISSOLVENZA (senza far vedere i triangoli interni)
+			// Disegna gli ALBERI IN DISSOLVENZA
 			if (transparentIndices.length > 0) {
 				gl.depthMask(false);
 				gl.enable(gl.CULL_FACE); // Attiva l'eliminazione delle facce nascoste
 
-				// A) Prima disegnamo solo le facce posteriori (dietro) dell'albero
+				// disegna solo le facce posteriori
 				gl.cullFace(gl.FRONT);
 				drawSubGroup(transparentIndices);
 
-				// B) Poi disegnamo solo le facce anteriori (davanti/esterne)
+				// disegna le facce anteriori
 				gl.cullFace(gl.BACK);
 				drawSubGroup(transparentIndices);
 

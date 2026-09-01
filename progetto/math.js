@@ -1,5 +1,3 @@
-// math.js: Utilità di algebra lineare per WebGL
-
 export function vec3Sub(a, b) {
   return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 }
@@ -104,17 +102,6 @@ export function mat4RotateY(angleRad) {
     c, 0, -s, 0,
     0, 1, 0, 0,
     s, 0, c, 0,
-    0, 0, 0, 1,
-  ];
-}
-
-export function mat4RotateX(angleRad) {
-  const c = Math.cos(angleRad);
-  const s = Math.sin(angleRad);
-  return [
-    1, 0, 0, 0,
-    0, c, s, 0,
-    0, -s, c, 0,
     0, 0, 0, 1,
   ];
 }

@@ -87,11 +87,11 @@ void main() {
   float texAlpha = 1.0;
 
   if (uUseTexture) {
-    vec2 uv = vUV;
-    if (uInvertUVY) {
-      uv.y = 1.0 - uv.y;
-    }
-    vec4 texColor = texture2D(uTexture, uv);
+    // vec2 uv = vUV;
+    // if (uInvertUVY) {
+    //   uv.y = 1.0 - uv.y;
+    // }
+    vec4 texColor = texture2D(uTexture, vUV);
     baseCol = texColor.rgb;
     texAlpha = texColor.a;
   }
@@ -355,6 +355,8 @@ export async function loadTexture(gl, url) {
 		const image = new Image();
 		image.crossOrigin = 'anonymous';
 		image.onload = () => {
+			// Chiede a WebGL di capovolgere l'immagine sull'asse Y al momento del caricamento
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 			gl.bindTexture(gl.TEXTURE_2D, texture);
 			const isPowerOfTwo = (value) => (value & (value - 1)) === 0;
 			const textureIsPowerOfTwo = isPowerOfTwo(image.width) && isPowerOfTwo(image.height);

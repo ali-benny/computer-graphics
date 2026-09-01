@@ -1,5 +1,3 @@
-// objLoader.js: Parser per file OBJ
-
 import { vec3Sub, vec3Cross, vec3Normalize } from "./math.js";
 
 export function parseOBJ(objText) {

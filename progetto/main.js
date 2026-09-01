@@ -27,15 +27,13 @@ import {
 	TREES
 } from './const.js';
 
-// ====== UTILITY FUNCTIONS ======
-
 function createPhotoBoardGeometry(width, height) {
 	const hw = width * 0.5,
 		hh = height * 0.5;
 	return {
 		positions: new Float32Array([-hw, -hh, 0, hw, -hh, 0, hw, hh, 0, -hw, hh, 0]),
 		normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
-		uvs: new Float32Array([0, 1, 1, 1, 1, 0, 0, 0]),
+		uvs: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]),
 		indices: new Uint32Array([0, 1, 2, 0, 2, 3])
 	};
 }
@@ -155,7 +153,7 @@ function mobileControlsEnabled(inputActions) {
 	});
 }
 
-function createControlPanel(state, camera, canvas) {
+function createControlPanel(state, canvas) {
 	// Inizializza dat.GUI
 	const gui = new dat.GUI({ width: 300 });
 
@@ -247,10 +245,7 @@ function createControlPanel(state, camera, canvas) {
 
 	mobileControlsEnabled(inputActions);
 
-	return {
-		inputActions,
-		updateInfo(player, camera) {}
-	};
+	return { inputActions };
 }
 
 async function loadModelWithResources(gl, modelPath, texturePath) {
@@ -530,12 +525,11 @@ async function main() {
 	camera.rollingLookAhead = CAMERA.rollingLookAhead;
 	camera.smoothing = CAMERA.smoothing;
 	camera.parallaxEnabled = CAMERA.parallaxEnabled;
-	console.log('Camera settings:', camera);
 	camera.maxYawOffset = CAMERA.maxYawOffset;
 	camera.maxPitchOffset = CAMERA.maxPitchOffset;
 	camera.mouseSmoothing = CAMERA.mouseSmoothing;
 
-	const hud = createControlPanel(state, camera, canvas);
+	const hud = createControlPanel(state, canvas);
 
 	const playerGO = new GameObject({
 		gl,
@@ -548,6 +542,13 @@ async function main() {
 
 	let lastTime = performance.now(),
 		lightAngle = 0;
+
+	// ====== pre-allocazioni animate() ======
+	const colliders = [...STATIC_COLLIDERS, houseCollider, ...treeColliders, ...flowerColliders];
+
+	let cameraForward = [0, 0, 0];
+	let cameraRight = [0, 0, 0];
+	let finalLightColor = [0, 0, 0];
 
 	function animate(nowMs) {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
@@ -572,14 +573,13 @@ async function main() {
 		}
 
 		// Movimento e Fisica
-		const cameraForward = [
+		cameraForward = [
 			Math.sin(camera.yaw) * Math.cos(camera.pitch),
 			Math.sin(camera.pitch),
 			-Math.cos(camera.yaw) * Math.cos(camera.pitch)
 		];
-		const cameraRight = [Math.cos(camera.yaw), 0, Math.sin(camera.yaw)];
+		cameraRight = [Math.cos(camera.yaw), 0, Math.sin(camera.yaw)];
 
-		const colliders = STATIC_COLLIDERS.concat(houseCollider, treeColliders, flowerColliders);
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
@@ -607,11 +607,7 @@ async function main() {
 			const dz = tc[2] - camera.position[2];
 			const distToCam = Math.sqrt(dx * dx + dz * dz);
 
-			let targetOpacity = 1.0;
-			if (distToCam < TREES.fadeRadius) {
-				targetOpacity = 0.0;
-			}
-			// LERP per transizione morbida
+			const targetOpacity = distToCam < TREES.fadeRadius ? 0.0 : 1.0;
 			treeOpacities[i] += (targetOpacity - treeOpacities[i]) * 0.1;
 		}
 
@@ -625,17 +621,16 @@ async function main() {
 			})
 		);
 
-		// Luci
+		// Luci: direzione e colore
 		let lightDir;
 		if (state.rotateLight) {
 			lightAngle += deltaTime * 0.65;
 			lightDir = [Math.cos(lightAngle) * 0.7, 1.0, Math.sin(lightAngle) * 0.7];
 		} else {
-			// La tua luce frontale preferita
 			lightDir = [0.0, -0.5, -1.0];
 		}
 		// Calcolo del colore finale scalato per l'intensità
-		const finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
+		finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
 
 		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
@@ -657,8 +652,6 @@ async function main() {
 				count: TREES.count
 			}
 		});
-
-		hud.updateInfo(player, camera);
 
 		requestAnimationFrame(animate);
 	}

@@ -1,4 +1,3 @@
-// gameObject.js: Classe per oggetti di scena con matrice di trasformazione
 import { createMesh, setMeshAttributes, drawMesh } from "./shaderUtils.js";
 import { mat4Identity, mat4Translate, mat4Scale, mat4RotateY, mat4Multiply } from "./math.js";
 
@@ -13,7 +12,6 @@ export class GameObject {
 
     this.color = options.color || [1.0, 1.0, 1.0];
     this.texture = options.texture || null;
-    this.invertUVY = options.invertUVY || false;
 
     this.position = options.position ? [...options.position] : [0, 0, 0];
     this.rotationY = options.rotationY || 0; // radians
@@ -66,9 +64,6 @@ export class GameObject {
 
     const uUseTexture = gl.getUniformLocation(program, "uUseTexture");
     if (uUseTexture) gl.uniform1i(uUseTexture, this.texture ? 1 : 0);
-
-    const uInvertUVY = gl.getUniformLocation(program, "uInvertUVY");
-    if (uInvertUVY) gl.uniform1i(uInvertUVY, this.invertUVY ? 1 : 0);
 
     if (this.texture) {
       gl.activeTexture(gl.TEXTURE0);

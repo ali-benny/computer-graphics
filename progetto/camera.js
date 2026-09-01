@@ -9,23 +9,14 @@ export class Camera {
 
 		this.yaw = 0;
 		this.pitch = 0;
-		this.speed = 3; // m/s (usato solo in modalità free)
-		this.mouseSensitivity = 0.004;
 
-		this.keys = {};
 		this.deltaTime = 0;
 		this.lastTime = Date.now();
 
 		// Memorizza il canvas per pointer lock e input specifico
 		this.canvas = canvas;
 
-		// Modalità camera: "free" (FPS), "follow" (terza persona)
 		this.followTarget = null; // Se in modalità follow, ref al player
-
-		// Parametri follow camera
-		this.followDistance = 5.0; // distanza dietro il target
-		this.followHeight = 2.0; // altezza offset
-		this.pitchFollow = 0.5; // pitch in follow mode (angolo fisso o legato a mouse)
 		this.smoothing = CAMERA.smoothing; // interpolazione posizione camera (0 = istantanea, 1 = infinito)
 
 		// Parametri modalità rolling-log (camera alta + 45° verso il basso)
@@ -46,19 +37,7 @@ export class Camera {
 		this.setupInput();
 	}
 
-	setKey(key, pressed) {
-		this.keys[key.toLowerCase()] = pressed;
-	}
-
-
 	setupInput() {
-		window.addEventListener('keydown', (e) => {
-			this.setKey(e.key, true);
-		});
-		window.addEventListener('keyup', (e) => {
-			this.setKey(e.key, false);
-		});
-
 		window.addEventListener('mousemove', (e) => {
 			if (this.parallaxEnabled) {
 				// Calcolo posizione normalizzata del mouse rispetto al centro (-1 a +1)
@@ -70,10 +49,8 @@ export class Camera {
 			}
 		});
 
-		// Richiesta pointer lock SOLO quando si clicca il canvas
 		this.canvas.addEventListener('click', (ev) => {
 			if (window.matchMedia('(pointer: fine)').matches) {
-				console.log(this.parallaxEnabled);
 				this.parallaxEnabled = this.parallaxEnabled ? false : true;
 			}
 		});
@@ -94,21 +71,21 @@ export class Camera {
 		const yawOffset = this.parallaxEnabled ? this.currentMouseOffset[0] * this.maxYawOffset : 0;
 		const headingYaw = this.yaw - yawOffset;
 
-		// const headingYaw = this.yaw;
 		const forwardX = Math.sin(headingYaw);
 		const forwardZ = -Math.cos(headingYaw);
 
-    // Pitch forzato a -45° (verso il basso).
+		// Pitch forzato a -45° (verso il basso).
 		const pitchOffset = this.parallaxEnabled
 			? this.currentMouseOffset[1] * this.maxPitchOffset
 			: 0;
-		// this.pitch = -Math.PI * 0.25;
 		this.pitch = -Math.PI * 0.25 - pitchOffset;
 
 		const desiredPos = [
 			target.position[0] - forwardX * this.rollingBackDistance,
-    target.position[1] + this.rollingHeight - Math.sin(pitchOffset) * this.rollingBackDistance,
-    target.position[2] - forwardZ * this.rollingBackDistance,
+			target.position[1] +
+				this.rollingHeight -
+				Math.sin(pitchOffset) * this.rollingBackDistance,
+			target.position[2] - forwardZ * this.rollingBackDistance
 		];
 
 		if (this.smoothing > 0.01) {
@@ -119,14 +96,13 @@ export class Camera {
 			this.position = [...desiredPos];
 		}
 
-		
 		this.target = [
 			target.position[0] + forwardX * this.rollingLookAhead,
 			target.position[1],
 			target.position[2] + forwardZ * this.rollingLookAhead
 		];
 	}
-  
+
 	getViewMatrix() {
 		return mat4LookAt(this.position, this.target, this.up);
 	}
