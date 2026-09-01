@@ -49,6 +49,49 @@ export class Camera {
 			}
 		});
 
+		//=== sposta camera mobile | Drag dinamico relativo ===//
+		this.canvas.addEventListener('touchstart', (e) => {
+			if (!this.parallaxEnabled || this._touchId !== null) return;
+
+			// Prende il primo tocco valido (non sugli elementi UI)
+			const touch = e.changedTouches[0];
+			if (touch.target.closest('#mobileTouchPad, .dg')) return;
+
+			this._touchId = touch.identifier;
+			this._lastTouchX = touch.clientX;
+			this._lastTouchY = touch.clientY;
+		}, { passive: true });
+
+		this.canvas.addEventListener('touchmove', (e) => {
+			if (this._touchId === null) return;
+
+			// Trova il dito assegnato alla camera
+			const touch = Array.from(e.changedTouches).find(t => t.identifier === this._touchId);
+			if (!touch) return;
+
+			// Calcola il delta del movimento dal frame precedente
+			const deltaX = (touch.clientX - this._lastTouchX) / window.innerWidth;
+			const deltaY = (touch.clientY - this._lastTouchY) / window.innerHeight;
+
+			this._lastTouchX = touch.clientX;
+			this._lastTouchY = touch.clientY;
+
+			// Accumula l'offset clampandolo tra -1 e 1
+			const sensitivity = 2.5; // Moltiplicatore sensibilità al tocco
+			this.targetMouseOffset[0] = Math.max(-1, Math.min(1, this.targetMouseOffset[0] + deltaX * sensitivity));
+			this.targetMouseOffset[1] = Math.max(-1, Math.min(1, this.targetMouseOffset[1] + deltaY * sensitivity));
+		}, { passive: true });
+
+		const resetTouch = (e) => {
+			const touch = Array.from(e.changedTouches).find(t => t.identifier === this._touchId);
+			if (touch) {
+				this._touchId = null;
+			}
+		};
+
+		this.canvas.addEventListener('touchend', resetTouch);
+		this.canvas.addEventListener('touchcancel', resetTouch);
+
 		this.canvas.addEventListener('click', (ev) => {
 			if (window.matchMedia('(pointer: fine)').matches) {
 				this.parallaxEnabled = this.parallaxEnabled ? false : true;

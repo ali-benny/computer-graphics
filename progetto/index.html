@@ -4,18 +4,27 @@
 <head>
 	<script type="text/javascript" src="lib/dat.gui.js"></script>
 	<!--         per ricaricare sempre la pagina da zero e non usare la cache      -->
-	<META HTTP-EQUIV=”Pragma” CONTENT=”no-cache”>
-	<META HTTP-EQUIV=”Cache-Control” CONTENT=”no-cache”>
+	<META HTTP-EQUIV="Pragma" CONTENT=”no-cache”>
+	<META HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 	<link rel="icon" href="textures/favicon.png" type="image/png">
-	<title>Computer Graphics | Alice Benatti</title>
+	<title>Alice Benatti | Computer Graphics </title>
 	<style>
+		/* html,
+		body,
+		canvas {
+			touch-action: none;
+			user-select: none;
+			-webkit-user-select: none;
+		} */
+
 		body {
 			margin: 0;
 			overflow: hidden;
 			font-family: monospace;
 			touch-action: none;
+			display: flex;
 		}
 
 		canvas {
@@ -24,19 +33,30 @@
 			height: 100vh;
 		}
 
-		@media (max-width: 768px) {
-			.dg {
-				font-size: 11px;
-			}
+		.overlay-title {
+			position: absolute;
+			top: -15px;
+			left: 1%;
+			width: auto;
+			height: 25%;
+			z-index: 10;
+			pointer-events: none;
+		}
 
-			.dg.main {
-				width: 250px !important;
+		@media (max-width: 768px) {
+			.overlay-title {
+				height: 20%;
+				bottom: -15px;
+				right: 1%;
+				top: auto;
+				left: auto;
 			}
 		}
 	</style>
 </head>
 
 <body>
+	<img src="img/titolo.png" class="overlay-title" alt="Titolo">
 	<script type="module" src="main.js"></script>
 </body>
 
