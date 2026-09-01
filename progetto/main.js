@@ -106,7 +106,8 @@ function mobileControlsEnabled(inputActions) {
 	document.body.appendChild(touchPad);
 
 	let touchActive = false;
-	let touchStartX = 0, touchStartY = 0;
+	let touchStartX = 0,
+		touchStartY = 0;
 
 	touchPad.addEventListener('touchstart', (e) => {
 		touchActive = true;
@@ -472,13 +473,15 @@ async function main() {
 	}
 
 	// Generazione Fiori
+	const flowerColliders = [];
+
 	for (let i = 0; i < FLOWERS.count; i++) {
 		const angle = Math.random() * Math.PI * 2;
 		const radius = FLOWERS.minRadius + Math.random() * FLOWERS.radiusRange;
 		const x = Math.cos(angle) * radius;
 		const z = Math.sin(angle) * radius;
 		const scale = FLOWERS.minScale + Math.random() * FLOWERS.scaleRange;
-		const rot = Math.random() * FLOWERS.rotationY; ;
+		const rot = Math.random() * FLOWERS.rotationY;
 
 		const flowerGO = new GameObject({
 			gl,
@@ -499,6 +502,13 @@ async function main() {
 		);
 
 		objects.push(flowerGO);
+
+		flowerColliders.push({
+			type: 'cylinder',
+			name: `flower_inst_${i}`,
+			center: [x, 0, z],
+			radius: 0.2 * scale
+		});
 	}
 
 	const state = {
@@ -565,7 +575,7 @@ async function main() {
 		];
 		const cameraRight = [Math.cos(camera.yaw), 0, Math.sin(camera.yaw)];
 
-		const colliders = STATIC_COLLIDERS.concat(houseCollider, treeColliders);
+		const colliders = STATIC_COLLIDERS.concat(houseCollider, treeColliders, flowerColliders);
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
