@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Bezier demo</title>
+    <style>
+        html {
+            background-color: aliceblue;
+        }
+
+        #mycanvas {
+            border: 1px solid blue;
+        }
+
+        div {
+            display: grid;
+            grid-template-columns: repeat(2, auto);
+            width: 40%;
+            gap: 2%;
+        }
+    </style>
+    <script>
+        function cleanInputs() {
+            document.getElementById("scaleX").value = 1;
+            document.getElementById("scaleY").value = 1;
+            document.getElementById("translateX").value = 0;
+            document.getElementById("translateY").value = 0;
+            document.getElementById("rotateAngle").value = 0;
+        }
+
+        function random(min, max, step){
+            return (Math.floor(Math.random() * ((max - min + 1) / step + 1)) + min / step) * step;
+        }
+
+    /**
+     * this is a "random" number generator 
+     * 
+     * try to create tranformations that can be finded by the user
+    */
+        function randomTransformations() {
+            document.getElementById('scaleX').value = random(1, 3, 0.1);
+            document.getElementById('scaleY').value = random(1, 3, 0.1);
+            document.getElementById('translateX').value = random(20, 80, 5);
+            document.getElementById('translateY').value = random(20, 80, 5);
+            document.getElementById('rotateAngle').value = random(10, 90, 5);
+        }
+
+
+    </script>
+</head>
+
+<!-- applicare trasformazioni geometriche
+elementari alla curva -->
+
+<!-- effettuare un panning (spostare la curva
+nell’area rettangolare viewport) -->
+
+<!-- effettuare uno zooming to fit della curva alla
+viewport (ingrandire la curva a piena viewport) -->
+
+<!-- effettuare lo zoom di un particolare -->
+
+<!--
+• zoom: ridefinire la window rispetto a quanto disegnato e applicare il mapping window-viewport permette di vedere a pieno schermo dettagli di quanto disegnato;
+• la trasformazione inversa viewport-window permette di definire interattivamente le parti del disegno da zoomare;
+ -->
+
+<body>
+    <canvas id="mycanvas"></canvas>
+    <button id="move-canvas" style="position: absolute; cursor: pointer;">+</button>
+    <p></p>
+    <div>
+        <input type="Button" value=" New Curve " onclick="restart()" style="background-color: lightblue;">
+        <div style="display: flex; width: max-content;">
+            <input type="Button" value=" Apply Transformations " onclick="transform()"
+                style="background-color: lightgreen;">
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="transform(true)"> Undo </button>
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="cleanInputs()"> Clean Inputs </button>
+            <button id="reset-transformations" style="background-color: lightgreen;" onclick="randomTransformations()"> Random Transformations </button>
+        </div>
+    </div>
+    <br>
+    <div>
+        <label for="scale">Scale</label>
+        <div style="display: flex; gap: 10px;">
+            <input type="number" id="scaleX" value="1" step="0.1" min="0.1" max="10">x<input type="number" id="scaleY"
+                value="1" step="0.1" min="0.1" max="10">
+        </div>
+        <label for="translateX">Translate X</label>
+        <input type="number" id="translateX" value="0" step="1" min="-100" max="100">
+        <label for="translateY">Translate Y</label>
+        <input type="number" id="translateY" value="0" step="1" min="-100" max="100">
+        <label for="rotateAngle">Rotate Angle</label>
+        <input type="number" id="rotateAngle" value="0" step="1" min="-360" max="360">
+    </div>
+    <script src="https://unpkg.com/mathjs@11.11.0/lib/browser/math.js"></script>
+    <script type="module" src="bezier.js"></script>
+</body>
+
+</html>

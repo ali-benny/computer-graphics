@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relazione progetto WebGL</title>
+  <style>
+    :root {
+      --ink: #202124;
+      --muted: #5f6368;
+      --accent: #1769aa;
+      --accent-light: #e8f1f8;
+      --line: #d9e0e6;
+      --paper: #ffffff;
+      --background: #f3f5f7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--background);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.65;
+    }
+
+    header {
+      color: white;
+      background: #17324d;
+      padding: 4rem 1.5rem 3rem;
+    }
+
+    header .content, main {
+      width: min(100% - 3rem, 980px);
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      font-family: "Trebuchet MS", Arial, sans-serif;
+      line-height: 1.2;
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(2.2rem, 5vw, 4rem);
+      letter-spacing: 0.02em;
+    }
+
+    header p {
+      max-width: 680px;
+      margin: 1rem 0 0;
+      color: #dcebf5;
+      font-size: 1.15rem;
+    }
+
+    main { padding: 2rem 0 4rem; }
+
+    section {
+      margin: 0 0 1.5rem;
+      padding: 1.8rem 2rem;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent-light);
+      padding-bottom: 0.5rem;
+    }
+
+    h3 { margin-bottom: 0.3rem; }
+    p { margin: 0.7rem 0; }
+    ul { padding-left: 1.4rem; }
+    li { margin: 0.35rem 0; }
+
+    code {
+      padding: 0.1rem 0.3rem;
+      color: #17324d;
+      background: #eef2f5;
+      border-radius: 3px;
+      font-family: Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    .intro {
+      font-size: 1.08rem;
+      color: var(--muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 0.7rem;
+      text-align: left;
+      vertical-align: top;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: #17324d;
+      background: var(--accent-light);
+      font-family: "Trebuchet MS", Arial, sans-serif;
+    }
+
+    .status-ok { color: #176b3a; font-weight: bold; }
+    .status-todo { color: #9a4d00; font-weight: bold; }
+
+    .note {
+      padding: 1rem 1.2rem;
+      border-left: 4px solid var(--accent);
+      background: #f4f8fb;
+    }
+
+    footer {
+      color: var(--muted);
+      text-align: center;
+      padding: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 640px) {
+      header { padding: 3rem 1rem 2.5rem; }
+      header .content, main { width: min(100% - 2rem, 980px); }
+      section { padding: 1.3rem; }
+      table { display: block; overflow-x: auto; }
+      th, td { min-width: 180px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="content">
+      <h1>Una piccola isola in WebGL</h1>
+      <p>Relazione del progetto d'esame di Fondamenti di Computer Graphics, anno accademico 2025/26.</p>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>1. Obiettivo e idea dell'applicazione</h2>
+      <p class="intro">Il progetto realizza una scena 3D interattiva ispirata a una piccola isola: il giocatore controlla un personaggio, si muove intorno a una casa e ad alcuni alberi e osserva l'ambiente attraverso una camera in terza persona.</p>
+      <p>L'applicazione e' stata sviluppata con HTML5, JavaScript, WebGL e GLSL, senza introdurre librerie esterne diverse dagli strumenti messi a disposizione per il corso. La scena utilizza modelli OBJ, texture 2D, illuminazione per-pixel e una deformazione cilindrica del terreno per ottenere un effetto visivo simile a un piccolo mondo curvo.</p>
+    </section>
+
+    <section>
+      <h2>2. Scena e contenuti</h2>
+      <p>La scena contiene i seguenti elementi:</p>
+      <ul>
+        <li>un terreno a griglia di dimensione <code>120 x 120</code>, curvato nel vertex shader;</li>
+        <li>una casa importata da file OBJ e suddivisa in gruppi di materiale;</li>
+        <li>un personaggio importato da file OBJ e controllabile dall'utente;</li>
+        <li>30 alberi generati in posizioni casuali e disegnati tramite instancing;</li>
+        <li>una bacheca composta da fotografia, palo e quattro elementi della cornice;</li>
+        <li>una skybox cubica con gradiente tra orizzonte e zenit.</li>
+      </ul>
+      <p>Le trasformazioni dei modelli vengono costruite a partire dai loro bounding box: il modello viene centrato, scalato uniformemente, ruotato e appoggiato al terreno. Questo permette di usare la stessa procedura per casa, personaggio e alberi anche se i file OBJ hanno dimensioni e origini diverse.</p>
+    </section>
+
+    <section>
+      <h2>3. Organizzazione del codice</h2>
+      <ul>
+        <li><code>main.js</code> orchestra caricamento delle risorse, creazione della scena, aggiornamento del gioco e render loop;</li>
+        <li><code>renderer.js</code> inizializza WebGL, configura le uniform globali e gestisce le draw call;</li>
+        <li><code>shaderUtils.js</code> contiene shader, buffer, attributi, texture e instancing;</li>
+        <li><code>geometry.js</code> genera cubi, piani, dischi e la griglia del terreno;</li>
+        <li><code>objLoader.js</code> legge i file OBJ e calcola i bounding box;</li>
+        <li><code>math.js</code> contiene vettori, matrici, prospettiva, camera look-at e trasformazioni;</li>
+        <li><code>camera.js</code> implementa le modalita' free, follow e rolling-follow;</li>
+        <li><code>player.js</code> gestisce movimento, accelerazione, attrito e collisioni;</li>
+        <li><code>gameObject.js</code> raccoglie mesh, texture, colore e matrice di un oggetto;</li>
+        <li><code>hudCanvas.js</code> disegna la minimappa 2D con posizione del player e degli alberi.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. Rendering 3D</h2>
+      <h3>Proiezione e camera</h3>
+      <p>La scena viene visualizzata con una proiezione prospettica ottenuta tramite <code>mat4Perspective</code>. La modalita' usata normalmente e' <code>rolling-follow</code>: la camera segue il personaggio da dietro e dall'alto, mantenendo il player al centro dell'inquadratura.</p>
+
+      <h3>Illuminazione</h3>
+      <p>Il fragment shader calcola una componente ambientale, una componente diffusa e una componente speculare. La luce e' una luce direzionale il cui colore e la cui intensita' possono essere modificati dal pannello di controllo. E' inoltre possibile attivare la rotazione della direzione luminosa nel tempo.</p>
+
+      <h3>Curvatura e skybox</h3>
+      <p>Il terreno viene generato come una griglia piana con molte suddivisioni. Il vertex shader modifica la coordinata verticale in funzione della distanza lungo l'asse Z, producendo la curvatura cilindrica senza modificare la geometria originale.</p>
+      <p>La skybox e' una seconda geometria cubica disegnata con shader dedicati. Il colore del fragment viene interpolato tra un colore dell'orizzonte e un colore dello zenit.</p>
+    </section>
+
+    <section>
+      <h2>5. Texture e materiali</h2>
+      <p>Il progetto applica texture a piu' oggetti della scena:</p>
+      <ul>
+        <li>la casa usa texture separate per muri/tetto e porta/finestre;</li>
+        <li>il personaggio usa la texture del modello;</li>
+        <li>gli alberi usano una texture con parti trasparenti;</li>
+        <li>il terreno usa <code>textures/grass.png</code>;</li>
+        <li>la bacheca usa la fotografia personale <code>textures/mia-foto.jpg</code>.</li>
+      </ul>
+      <p>Il caricamento riconosce texture power-of-two e configura mipmap e wrapping quando possibile. Per texture non power-of-two vengono usati <code>CLAMP_TO_EDGE</code> e filtraggio lineare.</p>
+    </section>
+
+    <section>
+      <h2>6. Movimento, collisioni e HUD</h2>
+      <p>Il personaggio usa i tasti WASD e si muove relativamente alla direzione della camera. Il movimento non e' istantaneo: il controller applica accelerazione, velocita' massima e attrito. La rotazione del personaggio segue la direzione di movimento.</p>
+      <p>Le collisioni sono risolte in piano XZ tramite:</p>
+      <ul>
+        <li>cilindri per gli alberi;</li>
+        <li>AABB per la casa;</li>
+        <li>limiti rettangolari;</li>
+        <li>un limite circolare per mantenere il player nel mondo.</li>
+      </ul>
+      <p>Un canvas 2D indipendente mostra una minimappa circolare, gli alberi come punti verdi, il player come triangolo orientato e le coordinate della camera e del personaggio.</p>
+    </section>
+
+    <section>
+      <h2>7. Animazione e tecniche avanzate</h2>
+      <p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati movimento, collisioni, camera, dissolvenza degli alberi, illuminazione e render.</p>
+      <p>La luce puo' ruotare attorno alla scena. Inoltre gli alberi vicini alla camera vengono resi progressivamente trasparenti tramite interpolazione dell'opacita'. Per le istanze trasparenti il renderer disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
+      <p>Il pannello <code>dat.GUI</code> permette di selezionare Alba, Mezzogiorno, Tramonto o Notte. Ogni preset modifica colore e intensita' della luce e i colori del gradiente della skybox. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
+    </section>
+
+    <section>
+      <h2>8. Requisiti del progetto</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Requisito</th>
+            <th>Stato</th>
+            <th>Implementazione</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Geometria 3D in prospettiva</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Proiezione prospettica in <code>renderer.js</code>.</td>
+          </tr>
+          <tr>
+            <td>Oggetto principale caricato da OBJ</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Casa, personaggio e alberi caricati con il parser OBJ.</td>
+          </tr>
+          <tr>
+            <td>Oggetto 3D animato</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Animazione della luce e dissolvenza dinamica degli alberi nel render loop.</td>
+          </tr>
+          <tr>
+            <td>Tastiera e mouse</td>
+            <td class="status-todo">Da verificare/completare</td>
+            <td>WASD e pointer lock sono presenti. Nella modalita' rolling-follow il mouse look e' disabilitato.</td>
+          </tr>
+          <tr>
+            <td>Illuminazione e shading</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Componenti ambientale, diffusa e speculare con luce configurabile.</td>
+          </tr>
+          <tr>
+            <td>Almeno due texture e foto dell'autore</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Texture su casa, personaggio, alberi, terreno e bacheca fotografica.</td>
+          </tr>
+          <tr>
+            <td>Pannello di controllo 2D</td>
+            <td class="status-ok">Soddisfatto</td>
+            <td>Pannello <code>dat.GUI</code> per luce, preset temporali e fog; minimappa su canvas 2D.</td>
+          </tr>
+          <tr>
+            <td>Fruibilita' mobile</td>
+            <td class="status-todo">Da completare</td>
+            <td>Il layout impedisce lo scroll, ma mancano controlli touch dedicati per movimento e visuale.</td>
+          </tr>
+          <tr>
+            <td>Advanced rendering opzionale</td>
+            <td class="status-ok">Implementato</td>
+            <td>Trasparenza e alpha cutout per alberi e foglie.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>9. Controlli</h2>
+      <ul>
+        <li><strong>WASD:</strong> movimento del personaggio;</li>
+        <li><strong>click sul canvas:</strong> richiesta del pointer lock su dispositivi con mouse;</li>
+        <li><strong>dat.GUI:</strong> luce orbitante, colore e intensita' della luce, preset della giornata e fog;</li>
+        <li><strong>minimappa:</strong> visualizzazione della posizione del personaggio e degli alberi.</li>
+      </ul>
+      <div class="note">Per rispettare pienamente la FAQ sulla fruibilita' mobile, la versione finale deve aggiungere un'alternativa touch ai controlli WASD e verificare il comportamento su un dispositivo mobile reale.</div>
+    </section>
+
+    <section>
+      <h2>10. Limiti e sviluppi futuri</h2>
+      <ul>
+        <li>aggiungere joystick virtuali o controlli touch equivalenti a WASD;</li>
+        <li>permettere una rotazione della camera tramite swipe oppure rendere attivo il mouse look nella modalita' corrente;</li>
+        <li>aggiungere un'animazione visibile e autonoma a un elemento della scena, come nuvole o un oggetto decorativo;</li>
+        <li>aggiungere ombre, se si desidera estendere ulteriormente il rendering avanzato;</li>
+        <li>preparare l'archivio finale con le cartelle <code>project</code> e <code>doc</code> come richiesto dalla consegna;</li>
+        <li>verificare il progetto su Chrome in ambiente Linux o Mac, prestando attenzione agli errori WebGL relativi ai buffer e alle estensioni.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>11. Avvio dell'applicazione</h2>
+      <p>L'applicazione deve essere servita tramite un server HTTP locale per permettere il caricamento degli OBJ e delle texture. Dalla cartella <code>progetto</code> e' possibile usare, ad esempio:</p>
+      <p><code>npx serve .</code></p>
+      <p>Successivamente si apre <code>http://localhost:3000/index.html</code> nel browser Chrome.</p>
+    </section>
+  </main>
+
+  <footer>Relazione del progetto WebGL - A.A. 2025/26</footer>
+</body>
+</html>

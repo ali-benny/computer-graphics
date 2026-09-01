@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<title>Basic Canvas</title>
+	<style>
+		html {
+			background-color: aliceblue;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+		}
+
+		canvas {
+			border: 2px solid #123f2c;
+		}
+	</style>
+</head>
+
+<body>
+	<div style="display: flex; align-items: center; gap: 20px;">
+		<h1>My Canvas</h1>
+		<select type="number" id="input_number">
+			<option value="1">1 - Rettangolo rosso</option>
+			<option value="2">2 - Linea viola</option>
+			<option value="3">3 - Linea verde</option>
+			<option value="4">4 - Circonferenza blu</option>
+			<option value="5">5 - Circonferenza blu scuro</option>
+		</select>
+		<button onclick="init(document.getElementById('input_number'))">Draw</button>
+		<button onclick="cleanCanvas()">Clean Canvas</button>
+	</div>
+	<canvas id="myCanvas" width="1000" height="500">
+		Upsi, sembra che il tuo browser non supporti il canvas! :(
+	</canvas>
+	<script>
+		function randomInt(min, max) {
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		function init(input) {
+			var canvas = document.getElementById("myCanvas");
+			var ctx = canvas.getContext("2d");
+
+			switch (input.value) {
+				case "1":
+					// 1 - piccolo rettangolo rosso 
+					ctx.fillStyle = "red";
+					ctx.fillRect(10, 10, randomInt(50,300), randomInt(50,300));	
+					break;
+				case "2":
+					// 2 - aggiungiamo una riga
+					ctx.beginPath();
+					ctx.strokeStyle = "purple";
+					ctx.lineWidth = 5;
+					ctx.moveTo(0, 0);
+					ctx.lineTo(100, randomInt(50, 300));
+					ctx.stroke();	// = disegna la linea !gli do l'ok riempiendo la memoria del buffer, se non lo faccio la linea non viene disegnata
+					break;
+				case "3":
+					// 3 - aggiungiamone un'altra
+					ctx.beginPath();
+					ctx.strokeStyle = "lightgreen";
+					ctx.lineWidth = 5;
+					ctx.moveTo(100, randomInt(50, 300));
+					ctx.lineTo(300, randomInt(50, 300));
+					ctx.stroke();
+					break;
+				case "4":
+					// 4 - aggiungiamo una circonferenza
+					ctx.beginPath();
+					ctx.arc(250, 250, randomInt(50, 150), 0, Math.PI * 2, false);
+					ctx.strokeStyle = "lightblue";
+					ctx.lineWidth = 10;
+					ctx.stroke();
+					break;
+				default:
+					// 5 - aggiungiamo un'altra circonferenza
+					ctx.beginPath();
+					ctx.imageSmoothingEnabled = false;	// disabilitiamo l'anti-aliasing per avere una circonferenza più "pixelata"
+					ctx.arc(200, 200, randomInt(25, 100), 0, Math.PI * 2, false);
+					ctx.strokeStyle = "darkblue";
+					ctx.lineWidth = 2;
+					ctx.stroke();
+			}
+		}
+
+		function cleanCanvas() {
+			// canvas.width = canvas.width;	// resetta il canvas, cancellando tutto ciò che è stato disegnato
+			// oppure:
+			var canvas = document.getElementById("myCanvas");
+			var ctx = canvas.getContext("2d");
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+		}
+	</script>
+</body>
+
+</html>
