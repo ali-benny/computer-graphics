@@ -2,7 +2,8 @@ export const MODEL_PATHS = {
 	char: 'obj/animal-crossing-character/source/char.obj',
 	house: 'obj/animal-crossing-house/source/house.obj',
 	tree: 'obj/animal-crossing-pine-tree/source/base.obj',
-	cloud: 'obj/nuvoletta.obj'
+	cloud: 'obj/nuvoletta.obj',
+	flower1: 'obj/fiore.obj',
 };
 
 export const TEXTURE_PATHS = {
@@ -11,7 +12,8 @@ export const TEXTURE_PATHS = {
 	char: './obj/animal-crossing-character/textures/character_ac_low_DefaultMaterial_BaseColor.png',
 	photo: './textures/mia-foto.jpg',
 	tree: './obj/animal-crossing-pine-tree/texture/texture_diffuse.png',
-	grass: './textures/grass.png'
+	grass: './textures/grass.png',
+	flower1: './textures/fiore.png',
 };
 
 export const GROUND = {
@@ -43,6 +45,15 @@ export const TREES = {
 	minScale: 1.1,
 	scaleRange: 1.1,
 	fadeRadius: 3.5
+};
+
+export const FLOWERS = {
+	count: 40,
+	minRadius: 4,
+	radiusRange: 55,
+	minScale: 0.8,
+	scaleRange: 0.5,
+	rotationY: -Math.PI / 2
 };
 
 export const CAMERA = {
@@ -96,14 +107,14 @@ export const TIME_PRESETS = {
 };
 
 export const STATIC_COLLIDERS = [
-    // Muro più in basso
-    { type: 'aabb', name: 'north', min: [-55, 0, 45], max: [55, 3, 55] },
-    // Muro più in alto
-    { type: 'aabb', name: 'south', min: [-55, 0, -55], max: [55, 3, -30] },
-    // Muro destra
-    { type: 'aabb', name: 'east', min: [30, 0, -55], max: [55, 3, 55] },
-    // Muro sinistra
-    { type: 'aabb', name: 'west', min: [-55, 0, -55], max: [-30, 3, 55] },
+	// Muro più in basso
+	{ type: 'aabb', name: 'north', min: [-55, 0, 45], max: [55, 3, 55] },
+	// Muro più in alto
+	{ type: 'aabb', name: 'south', min: [-55, 0, -55], max: [55, 3, -30] },
+	// Muro destra
+	{ type: 'aabb', name: 'east', min: [30, 0, -55], max: [55, 3, 55] },
+	// Muro sinistra
+	{ type: 'aabb', name: 'west', min: [-55, 0, -55], max: [-30, 3, 55] }
 ];
 
 export const DEFAULT_TIME_OF_DAY = 'Mezzogiorno';

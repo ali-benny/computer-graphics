@@ -16,6 +16,7 @@ import {
 	DEFAULT_SKY_COLOR_HORIZON,
 	DEFAULT_SKY_COLOR_ZENITH,
 	DEFAULT_TIME_OF_DAY,
+	FLOWERS,
 	FOG,
 	GROUND,
 	MODEL_PATHS,
@@ -103,58 +104,58 @@ function mobileControlsEnabled(inputActions) {
 	  z-index: 100;
 	`;
 	document.body.appendChild(touchPad);
-	
+
 	let touchActive = false;
 	let touchStartX = 0, touchStartY = 0;
-	
+
 	touchPad.addEventListener('touchstart', (e) => {
-	  touchActive = true;
-	  const touch = e.touches[0];
-	  const rect = touchPad.getBoundingClientRect();
-	  touchStartX = touch.clientX - rect.left;
-	  touchStartY = touch.clientY - rect.top;
+		touchActive = true;
+		const touch = e.touches[0];
+		const rect = touchPad.getBoundingClientRect();
+		touchStartX = touch.clientX - rect.left;
+		touchStartY = touch.clientY - rect.top;
 	});
-	
+
 	touchPad.addEventListener('touchmove', (e) => {
-	  if (!touchActive) return;
-	  const touch = e.touches[0];
-	  const rect = touchPad.getBoundingClientRect();
-	  const x = touch.clientX - rect.left - 60;
-	  const y = touch.clientY - rect.top - 60;
-	  const dist = Math.hypot(x, y);
-	  const maxDist = 50;
-	  
-	  if (dist > maxDist) {
-		const scale = maxDist / dist;
-		inputActions.moveForward = y * scale < -20;
-		inputActions.moveBackward = y * scale > 20;
-		inputActions.moveLeft = x * scale < -20;
-		inputActions.moveRight = x * scale > 20;
-	  }
+		if (!touchActive) return;
+		const touch = e.touches[0];
+		const rect = touchPad.getBoundingClientRect();
+		const x = touch.clientX - rect.left - 60;
+		const y = touch.clientY - rect.top - 60;
+		const dist = Math.hypot(x, y);
+		const maxDist = 50;
+
+		if (dist > maxDist) {
+			const scale = maxDist / dist;
+			inputActions.moveForward = y * scale < -20;
+			inputActions.moveBackward = y * scale > 20;
+			inputActions.moveLeft = x * scale < -20;
+			inputActions.moveRight = x * scale > 20;
+		}
 	});
-	
+
 	touchPad.addEventListener('touchend', () => {
-	  touchActive = false;
-	  inputActions.moveForward = false;
-	  inputActions.moveBackward = false;
-	  inputActions.moveLeft = false;
-	  inputActions.moveRight = false;
+		touchActive = false;
+		inputActions.moveForward = false;
+		inputActions.moveBackward = false;
+		inputActions.moveLeft = false;
+		inputActions.moveRight = false;
 	});
-	
+
 	// Mostra il touchpad solo su mobile
-	const isMobile = window.innerWidth <= 768 || window.matchMedia("(pointer: coarse)").matches;
+	const isMobile = window.innerWidth <= 768 || window.matchMedia('(pointer: coarse)').matches;
 	if (isMobile) {
-	  touchPad.style.display = 'block';
+		touchPad.style.display = 'block';
 	}
-	
+
 	window.addEventListener('resize', () => {
-	  const isMobile = window.innerWidth <= 768;
-	  touchPad.style.display = isMobile ? 'block' : 'none';
+		const isMobile = window.innerWidth <= 768;
+		touchPad.style.display = isMobile ? 'block' : 'none';
 	});
 }
 
 function createControlPanel(state, camera, canvas) {
-	// 1. Inizializza dat.GUI
+	// Inizializza dat.GUI
 	const gui = new dat.GUI({ width: 300 });
 
 	// --- CARTELLA ILLUMINAZIONE ---
@@ -242,7 +243,7 @@ function createControlPanel(state, camera, canvas) {
 			document.activeElement.blur();
 		}
 	});
-	
+
 	mobileControlsEnabled(inputActions);
 
 	return {
@@ -269,11 +270,12 @@ async function main() {
 	const renderer = new Renderer(canvas);
 	const gl = renderer.gl;
 
-	const [houseGeometry, char, tree, cloud] = await Promise.all([
+	const [houseGeometry, char, tree, cloud, flower] = await Promise.all([
 		loadOBJ(MODEL_PATHS.house),
 		loadModelWithResources(gl, MODEL_PATHS.char, TEXTURE_PATHS.char),
 		loadModelWithResources(gl, MODEL_PATHS.tree, TEXTURE_PATHS.tree),
-		loadOBJ(MODEL_PATHS.cloud)
+		loadOBJ(MODEL_PATHS.cloud),
+		loadModelWithResources(gl, MODEL_PATHS.flower1, TEXTURE_PATHS.flower1)
 	]);
 
 	const houseBounds = computeBounds(houseGeometry.positions);
@@ -437,7 +439,7 @@ async function main() {
 	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
 	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
 
-	// Generazione Alberi Instanziati
+	// Generazione Alberi
 	const treeMatrices = new Float32Array(TREES.count * 16);
 	const treeOpacities = new Float32Array(TREES.count);
 	const treeColliders = [];
@@ -467,6 +469,36 @@ async function main() {
 			center: [m[12], m[13], m[14]],
 			radius: 0.6 * scaleMul
 		});
+	}
+
+	// Generazione Fiori
+	for (let i = 0; i < FLOWERS.count; i++) {
+		const angle = Math.random() * Math.PI * 2;
+		const radius = FLOWERS.minRadius + Math.random() * FLOWERS.radiusRange;
+		const x = Math.cos(angle) * radius;
+		const z = Math.sin(angle) * radius;
+		const scale = FLOWERS.minScale + Math.random() * FLOWERS.scaleRange;
+		const rot = Math.random() * FLOWERS.rotationY; ;
+
+		const flowerGO = new GameObject({
+			gl,
+			mesh: flower.mesh,
+			texture: flower.texture,
+			color: [1.0, 1.0, 1.0],
+			invertUVY: true,
+			type: 'flower'
+		});
+
+		flowerGO.setModelMatrix(
+			buildModelMatrix(flower.bounds, {
+				scaleMul: scale,
+				placeOnGround: true,
+				translate: [x, 0, z],
+				rotateY: rot
+			})
+		);
+
+		objects.push(flowerGO);
 	}
 
 	const state = {
