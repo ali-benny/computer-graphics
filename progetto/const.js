@@ -61,7 +61,12 @@ export const CAMERA = {
 	rollingBackDistance: 8.0,
 	rollingHeight: 3.5,
 	rollingLookAhead: 0.0,
-	smoothing: 0.0
+	smoothing: 0.0,
+	// Parametri Parallasse
+	parallaxEnabled: false,
+	maxYawOffset: 20 * (Math.PI / 180),   // ±20 gradi in radianti per la rotazione Orizzontale
+	maxPitchOffset: 10 * (Math.PI / 180), // ±10 gradi in radianti per la rotazione Verticale
+	mouseSmoothing: 0.05                  // Interpolazione morbida del cursore (LERP)
 };
 
 export const RENDERING = {

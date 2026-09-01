@@ -523,13 +523,17 @@ async function main() {
 	};
 	const player = new PlayerController([0, 0, 9.0], 12);
 	const camera = new Camera(CAMERA.position, [0, 0, 0], canvas);
-	camera.mode = 'rolling-follow';
 	camera.followTarget = player;
 	camera.yaw = 0;
 	camera.rollingBackDistance = CAMERA.rollingBackDistance;
 	camera.rollingHeight = CAMERA.rollingHeight;
 	camera.rollingLookAhead = CAMERA.rollingLookAhead;
 	camera.smoothing = CAMERA.smoothing;
+	camera.parallaxEnabled = CAMERA.parallaxEnabled;
+	console.log('Camera settings:', camera);
+	camera.maxYawOffset = CAMERA.maxYawOffset;
+	camera.maxPitchOffset = CAMERA.maxPitchOffset;
+	camera.mouseSmoothing = CAMERA.mouseSmoothing;
 
 	const hud = createControlPanel(state, camera, canvas);
 
