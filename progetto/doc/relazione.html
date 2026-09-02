@@ -138,7 +138,7 @@
 <body>
   <header>
     <div class="content" style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
-      <a href="../index.html" style="max-width: 30%;">
+      <a href="/" style="max-width: 30%;">
         <img src="../img/titolo.png" alt="Titolo" style="max-width: 100%; height: auto;" />
       </a>
       <p><b>Relazione del progetto d'esame di Computer Graphics<br>Alice Benatti</b>, matricola 0001241469<br>a.a. 2025/2026</p>
@@ -153,7 +153,14 @@
     </section>
 
     <section>
-      <h2>2. Scena e contenuti</h2>
+      <h2>2. Scelte progettuali</h2>
+      <p>Una scelta importante e' stata mantenere, per quanto possibile, lo stile della camera tipico del gioco originale a cui il progetto si ispira. Per questo motivo e' stata utilizzata una camera in terza persona che segue il personaggio da dietro e dall'alto, invece di una visuale libera completamente indipendente dal protagonista.</p>
+      <p>Per rispettare il requisito di interazione tramite mouse senza perdere questa impostazione, il mouse non controlla una rotazione completa a 360 gradi. La posizione del cursore produce invece una rotazione limitata e graduale della visuale tramite un effetto di parallasse. In questo modo l'utente puo' osservare meglio la scena mantenendo il carattere e la leggibilita' della camera originale.</p>
+      <p>Anche la trasparenza degli oggetti vicini alla camera riprende una soluzione tipica del gioco di riferimento: quando la camera passa davanti alla casa o agli alberi, questi diventano progressivamente trasparenti e non impediscono la visuale del personaggio. L'effetto e' stato realizzato interpolando l'opacita' nel tempo, in modo da evitare cambiamenti improvvisi e rendere piu' naturale l'esplorazione.</p>
+    </section>
+
+    <section>
+      <h2>3. Scena e contenuti</h2>
       <p>La scena contiene i seguenti elementi:</p>
       <ul>
         <li>un terreno a griglia di dimensione <code>100 x 100</code> con <code>80 x 80</code> suddivisioni, curvato nel vertex shader;</li>
@@ -169,7 +176,7 @@
     </section>
 
     <section>
-      <h2>3. Organizzazione del codice</h2>
+      <h2>4. Organizzazione del codice</h2>
       <ul>
         <li><code>main.js</code> orchestra caricamento delle risorse, creazione della scena, aggiornamento del gioco e render loop;</li>
         <li><code>renderer.js</code> inizializza WebGL, configura le uniform globali e gestisce le draw call;</li>
@@ -186,7 +193,7 @@
     </section>
 
     <section>
-      <h2>4. Rendering 3D</h2>
+      <h2>5. Rendering 3D</h2>
       <h3>Proiezione e camera</h3>
       <p>La scena viene visualizzata con una proiezione prospettica ottenuta tramite <code>mat4Perspective</code>. La modalita' usata normalmente e' <code>rolling-follow</code>: la camera segue il personaggio da dietro e dall'alto, mantenendo il player al centro dell'inquadratura. Su dispositivi con mouse la visuale puo' essere modificata tramite parallasse in base alla posizione del cursore; un click sul canvas abilita o disabilita questo comportamento.</p>
 
@@ -199,7 +206,7 @@
     </section>
 
     <section>
-      <h2>5. Texture e materiali</h2>
+      <h2>6. Texture e materiali</h2>
       <p>Il progetto applica texture a piu' oggetti della scena:</p>
       <ul>
         <li>la casa usa texture separate per muri/tetto e porta/finestre;</li>
@@ -212,7 +219,7 @@
     </section>
 
     <section>
-      <h2>6. Movimento, collisioni e HUD</h2>
+      <h2>7. Movimento, collisioni e HUD</h2>
       <p>Il personaggio usa i tasti WASD e si muove relativamente alla direzione della camera. Il movimento non e' istantaneo: il controller applica accelerazione, velocita' massima e attrito. La rotazione del personaggio segue la direzione della velocita'. Su dispositivi touch, un D-pad virtuale fornisce le stesse quattro direzioni e un secondo pad circolare controlla la visuale.</p>
       <p>Le collisioni sono risolte in piano XZ tramite:</p>
       <ul>
@@ -225,7 +232,7 @@
     </section>
 
     <section>
-      <h2>7. Animazione e tecniche avanzate</h2>
+      <h2>8. Animazione e tecniche avanzate</h2>
       <p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati movimento, collisioni, camera, nuvole, fiori, dissolvenza degli alberi e della casa, illuminazione e render.</p>
       <p>La luce puo' ruotare attorno alla scena. Inoltre gli alberi e la casa vicini alla camera vengono resi progressivamente trasparenti tramite interpolazione dell'opacita'. Per le istanze trasparenti il renderer disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
       <p>Le nuvole si muovono orizzontalmente e vengono riposizionate sul lato opposto quando superano il bordo dell'area di gioco. Una parte dei fiori ruota continuamente attorno all'asse Y, con velocita' e direzione variabili.</p>
@@ -233,7 +240,7 @@
     </section>
 
     <section>
-      <h2>8. Controlli</h2>
+      <h2>9. Controlli</h2>
       <ul>
         <li><strong>WASD:</strong> movimento del personaggio;</li>
         <li><strong>mouse:</strong> spostamento del cursore per la parallasse della visuale; il click sul canvas abilita o disabilita l'effetto;</li>
@@ -241,13 +248,12 @@
         <li><strong>dat.GUI:</strong> luce orbitante, colore e intensita' della luce, preset della giornata e fog;</li>
         <li><strong>interfaccia:</strong> il collegamento alla relazione e la rappresentazione dei tasti sono disponibili nella schermata iniziale.</li>
       </ul>
-      <div class="note">Per rispettare pienamente la FAQ sulla fruibilita' mobile, la versione finale deve aggiungere un'alternativa touch ai controlli WASD e verificare il comportamento su un dispositivo mobile reale.</div>
+      <div class="note">Su dispositivi mobili i controlli touch vengono visualizzati automaticamente e permettono di sostituire sia la tastiera sia il mouse.</div>
     </section>
 
     <section>
-      <h2>9. Limiti e sviluppi futuri</h2>
+      <h2>10. Limiti e sviluppi futuri</h2>
       <ul>
-        <li>rifinire la sensibilita' dei controlli touch e della parallasse della camera;</li>
         <li>aggiungere un'animazione visibile e autonoma a un ulteriore elemento della scena, come un oggetto decorativo;</li>
         <li>aggiungere ombre, se si desidera estendere ulteriormente il rendering avanzato;</li>
         <li>preparare l'archivio finale con le cartelle <code>project</code> e <code>doc</code> come richiesto dalla consegna;</li>
@@ -256,7 +262,7 @@
     </section>
 
     <section>
-      <h2>10. Avvio dell'applicazione</h2>
+      <h2>11. Avvio dell'applicazione</h2>
       <p>L'applicazione deve essere servita tramite un server HTTP locale per permettere il caricamento degli OBJ e delle texture. Dalla cartella <code>progetto</code> e' possibile usare, ad esempio:</p>
       <p><code>python -m http.server</code></p>
       <p>Successivamente si apre <code>http://localhost:8000/index.html</code> nel browser (è consigliato Chrome per una migliore esperienza)</p>
