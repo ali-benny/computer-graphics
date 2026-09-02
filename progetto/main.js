@@ -403,6 +403,7 @@ async function main() {
 
 	// Generazione Fiori
 	const flowerColliders = [];
+	const animatedFlowers = [];
 
 	for (let i = 0; i < FLOWERS.count; i++) {
 		const angle = Math.random() * Math.PI * 2;
@@ -420,6 +421,21 @@ async function main() {
 			invertUVY: true,
 			type: 'flower'
 		});
+
+		// Salviamo parametri utili per la rotazione
+		flowerGO.baseScale = scale;
+		flowerGO.basePosition = [x, 0, z];
+		flowerGO.currentRotationY = rot;
+
+		// Animiamo solo la metà dei fiori
+		if (i % 2 === 0) {
+			// Direzione: 1 = orario, -1 = antiorario (alternato in base all'indice o casuale)
+			const direction = i % 4 === 0 ? 1 : -1;
+			const speed = 0.5 + Math.random() * 1.0;
+
+			flowerGO.rotationSpeed = speed * direction;
+			animatedFlowers.push(flowerGO);
+		}
 
 		flowerGO.setModelMatrix(
 			buildModelMatrix(flower.bounds, {
@@ -565,6 +581,19 @@ async function main() {
 		}
 		// Calcolo del colore finale scalato per l'intensità
 		finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
+
+		// Aggiorna fiori rotanti
+		for (const f of animatedFlowers) {
+			f.currentRotationY += deltaTime * f.rotationSpeed;
+			f.setModelMatrix(
+				buildModelMatrix(flower.bounds, {
+					scaleMul: f.baseScale,
+					placeOnGround: true,
+					translate: f.basePosition,
+					rotateY: f.currentRotationY
+				})
+			);
+		}
 
 		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
