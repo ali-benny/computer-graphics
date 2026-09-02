@@ -23,17 +23,31 @@ canvas {
 	flex-direction: column;
 }
 
-.overlay-title {
-	width: auto;
+.overlay-title img {
+	width: 100%;
 }
 
-h3 {
+h3,
+a {
 	background-color: #c48d3f;
 	color: #fff563;
 	text-align: center;
 	padding: 5pt;
 	margin: 0;
 	border-radius: 16pt;
+}
+
+a {
+	margin-top: 10pt;
+	font-weight: bold;
+	font-size: 14pt;
+	text-decoration: none;
+	color: #9dffb0 !important;
+	background-color: #fffffa80;
+}
+
+a:hover {
+	background-color: #fffffa60;
 }
 
 @media (max-width: 768px) {
@@ -45,10 +59,14 @@ h3 {
 		top: auto;
 		left: auto;
 	}
+
+	.wasd-container {
+		display: none;
+	}
 }
 
 @media (max-width: 1080px) {
-	h3 {
+	h3,a {
 		display: none;
 	}
 }
@@ -96,11 +114,4 @@ h3 {
 	color: #222;
 	transform: translateY(2px);
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-}
-
-/* Nascondi se è un dispositivo touch/mobile */
-@media (max-width: 768px) {
-	.wasd-container {
-		display: none;
-	}
 }
