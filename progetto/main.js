@@ -497,7 +497,7 @@ async function main() {
 		fogNear: FOG.near,
 		fogFar: FOG.far
 	};
-	const player = new PlayerController([0, 0, 9.0], 12);
+	const player = new PlayerController([0, 0, 9.0], 5);
 	const camera = new Camera(CAMERA.position, [0, 0, 0], canvas);
 	camera.followTarget = player;
 	camera.yaw = 0;
