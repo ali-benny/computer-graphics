@@ -145,8 +145,12 @@ function createControlPanel(state, canvas, camera) {
 		moveRight: false
 	};
 
-	const keyMap = { w: 'moveForward', s: 'moveBackward', a: 'moveLeft', d: 'moveRight' };
-
+	const keyMap = {
+		w: { action: 'moveForward', element: document.getElementById('key-w') },
+		s: { action: 'moveBackward', element: document.getElementById('key-s') },
+		a: { action: 'moveLeft', element: document.getElementById('key-a') },
+		d: { action: 'moveRight', element: document.getElementById('key-d') }
+	};
 	const handleKey = (e, isDown) => {
 		// Se l'utente sta scrivendo in un campo di testo (es. un input di dat.gui), ignora i tasti WASD
 		if (
@@ -157,10 +161,15 @@ function createControlPanel(state, canvas, camera) {
 		}
 
 		const key = e.key.toLowerCase();
-		const action = keyMap[key];
-		if (action) {
-			inputActions[action] = isDown;
-			// Previene lo scorrimento della pagina con frecce/tasti se necessario
+		const mapping = keyMap[key];
+		if (mapping) {
+			inputActions[mapping.action] = isDown;
+			
+			// Aggiunge o rimuove la classe per illuminare il tasto a schermo
+			if (mapping.element) {
+				mapping.element.classList.toggle('active', isDown);
+			}
+
 			if (['w', 'a', 's', 'd'].includes(key)) {
 				e.preventDefault();
 			}
@@ -169,6 +178,28 @@ function createControlPanel(state, canvas, camera) {
 
 	window.addEventListener('keydown', (e) => handleKey(e, true));
 	window.addEventListener('keyup', (e) => handleKey(e, false));
+
+	// Gestione del Click/Touch sui Pulsanti a Schermo
+	Object.values(keyMap).forEach(({ action, element }) => {
+		if (!element) return;
+
+		const pressAction = (e) => {
+			e.preventDefault();
+			inputActions[action] = true;
+			element.classList.add('active');
+		};
+
+		const releaseAction = (e) => {
+			e.preventDefault();
+			inputActions[action] = false;
+			element.classList.remove('active');
+		};
+
+		element.addEventListener('pointerdown', pressAction);
+		element.addEventListener('pointerup', releaseAction);
+		element.addEventListener('pointerleave', releaseAction);
+		element.addEventListener('pointercancel', releaseAction);
+	});
 
 	// Toglie il focus dagli elementi di dat.gui quando si clicca sulla scena
 	canvas.addEventListener('pointerdown', () => {

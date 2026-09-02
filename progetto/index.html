@@ -10,69 +10,23 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 	<link rel="icon" href="textures/favicon.png" type="image/png">
 	<title>Alice Benatti | Computer Graphics </title>
-	<!-- <link href="./index.css" rel="stylesheet"> -->
-	<style>
-		body {
-			margin: 0;
-			overflow: hidden;
-			font-family: monospace;
-			touch-action: none;
-			display: flex;
-		}
-
-		canvas {
-			display: block;
-			width: 100vw;
-			height: 100vh;
-		}
-
-		.overlay {
-			position: absolute;
-			left: 1%;
-			z-index: 10;
-			width: 15%;
-			height: 100%;
-			display: flex;
-			justify-content: start;
-			flex-direction: column;
-		}
-
-		.overlay-title {
-			width: auto;
-		}
-
-		h3 {
-			background-color: #c48d3f;
-			color: #fff563;
-			text-align: center;
-			padding: 5pt;
-			margin: 0;
-			border-radius: 16pt;
-		}
-
-		@media (max-width: 768px) {
-			.overlay {
-				width: 40%;
-				justify-content: end;
-				bottom: 20%;
-				right: 1%;
-				top: auto;
-				left: auto;
-			}
-		}
-
-		@media (max-width: 1080px) {
-			h3 {
-				display: none;
-			}
-		}
-	</style>
+	<link href="./index.css" rel="stylesheet">
 </head>
 
 <body>
 	<div class="overlay">
 		<img src="img/titolo.png" class="overlay-title" alt="Titolo" />
 		<h3>Clicca con il mouse sulla scena per <u>abilitare/disabilitare</u> la rotazione della visuale</h3>
+		<div id="wasd-overlay" class="wasd-container">
+			<div class="wasd-row">
+				<div class="key" id="key-w">W</div>
+			</div>
+			<div class="wasd-row">
+				<div class="key" id="key-a">A</div>
+				<div class="key" id="key-s">S</div>
+				<div class="key" id="key-d">D</div>
+			</div>
+		</div>
 	</div>
 	<script type="module" src="main.js"></script>
 </body>
