@@ -3,7 +3,7 @@ export const MODEL_PATHS = {
 	house: 'obj/animal-crossing-house/source/house.obj',
 	tree: 'obj/animal-crossing-pine-tree/source/base.obj',
 	cloud: 'obj/nuvoletta.obj',
-	flower1: 'obj/fiore.obj',
+	flower1: 'obj/fiore.obj'
 };
 
 export const TEXTURE_PATHS = {
@@ -13,7 +13,7 @@ export const TEXTURE_PATHS = {
 	photo: './textures/mia-foto.jpg',
 	tree: './obj/animal-crossing-pine-tree/texture/texture_diffuse.png',
 	grass: './textures/grass.png',
-	flower1: './textures/fiore.png',
+	flower1: './textures/fiore.png'
 };
 
 export const GROUND = {
@@ -64,9 +64,9 @@ export const CAMERA = {
 	smoothing: 0.0,
 	// Parametri Parallasse
 	parallaxEnabled: false,
-	maxYawOffset: 20 * (Math.PI / 180),   // ±20 gradi in radianti per la rotazione Orizzontale
+	maxYawOffset: 20 * (Math.PI / 180), // ±20 gradi in radianti per la rotazione Orizzontale
 	maxPitchOffset: 10 * (Math.PI / 180), // ±10 gradi in radianti per la rotazione Verticale
-	mouseSmoothing: 0.05                  // Interpolazione morbida del cursore (LERP)
+	mouseSmoothing: 0.05 // Interpolazione morbida del cursore (LERP)
 };
 
 export const RENDERING = {
