@@ -1,0 +1,117 @@
+body {
+	margin: 0;
+	overflow: hidden;
+	font-family: monospace;
+	touch-action: none;
+	display: flex;
+}
+
+canvas {
+	display: block;
+	width: 100vw;
+	height: 100vh;
+}
+
+.overlay {
+	position: absolute;
+	left: 1%;
+	z-index: 10;
+	width: 15%;
+	height: 100%;
+	display: flex;
+	justify-content: start;
+	flex-direction: column;
+}
+
+.overlay-title img {
+	width: 100%;
+}
+
+h3,
+a {
+	background-color: #c48d3f;
+	color: #fff563;
+	text-align: center;
+	padding: 5pt;
+	margin: 0;
+	border-radius: 16pt;
+}
+
+a {
+	margin-top: 10pt;
+	font-weight: bold;
+	font-size: 14pt;
+	text-decoration: none;
+	color: #9dffb0 !important;
+	background-color: #fffffa80;
+}
+
+a:hover {
+	background-color: #fffffa60;
+}
+
+@media (max-width: 768px) {
+	.overlay {
+		width: 40%;
+		justify-content: end;
+		bottom: 20%;
+		right: 1%;
+		top: auto;
+		left: auto;
+	}
+
+	.wasd-container {
+		display: none;
+	}
+}
+
+@media (max-width: 1080px) {
+	h3,a {
+		display: none;
+	}
+}
+
+.wasd-container {
+	position: absolute;
+	bottom: 20px;
+	left: 20px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	z-index: 1000;
+	user-select: none;
+	font-family: system-ui, sans-serif;
+}
+
+.wasd-row {
+	display: flex;
+	gap: 6px;
+}
+
+.key {
+	width: 44px;
+	height: 44px;
+	background: rgba(255, 255, 255, 0.2);
+	border: 2px solid rgba(255, 255, 255, 0.6);
+	border-radius: 8px;
+	color: white;
+	font-weight: bold;
+	font-size: 18px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(4px);
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+	transition: all 0.08s ease;
+	cursor: pointer;
+}
+
+/* Effetto pressione / tasto attivo */
+.key.active,
+.key:active {
+	background: rgba(255, 255, 255, 0.85);
+	color: #222;
+	transform: translateY(2px);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}

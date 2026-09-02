@@ -145,8 +145,12 @@ function createControlPanel(state, canvas, camera) {
 		moveRight: false
 	};
 
-	const keyMap = { w: 'moveForward', s: 'moveBackward', a: 'moveLeft', d: 'moveRight' };
-
+	const keyMap = {
+		w: { action: 'moveForward', element: document.getElementById('key-w') },
+		s: { action: 'moveBackward', element: document.getElementById('key-s') },
+		a: { action: 'moveLeft', element: document.getElementById('key-a') },
+		d: { action: 'moveRight', element: document.getElementById('key-d') }
+	};
 	const handleKey = (e, isDown) => {
 		// Se l'utente sta scrivendo in un campo di testo (es. un input di dat.gui), ignora i tasti WASD
 		if (
@@ -157,10 +161,15 @@ function createControlPanel(state, canvas, camera) {
 		}
 
 		const key = e.key.toLowerCase();
-		const action = keyMap[key];
-		if (action) {
-			inputActions[action] = isDown;
-			// Previene lo scorrimento della pagina con frecce/tasti se necessario
+		const mapping = keyMap[key];
+		if (mapping) {
+			inputActions[mapping.action] = isDown;
+			
+			// Aggiunge o rimuove la classe per illuminare il tasto a schermo
+			if (mapping.element) {
+				mapping.element.classList.toggle('active', isDown);
+			}
+
 			if (['w', 'a', 's', 'd'].includes(key)) {
 				e.preventDefault();
 			}
@@ -169,6 +178,28 @@ function createControlPanel(state, canvas, camera) {
 
 	window.addEventListener('keydown', (e) => handleKey(e, true));
 	window.addEventListener('keyup', (e) => handleKey(e, false));
+
+	// Gestione del Click/Touch sui Pulsanti a Schermo
+	Object.values(keyMap).forEach(({ action, element }) => {
+		if (!element) return;
+
+		const pressAction = (e) => {
+			e.preventDefault();
+			inputActions[action] = true;
+			element.classList.add('active');
+		};
+
+		const releaseAction = (e) => {
+			e.preventDefault();
+			inputActions[action] = false;
+			element.classList.remove('active');
+		};
+
+		element.addEventListener('pointerdown', pressAction);
+		element.addEventListener('pointerup', releaseAction);
+		element.addEventListener('pointerleave', releaseAction);
+		element.addEventListener('pointercancel', releaseAction);
+	});
 
 	// Toglie il focus dagli elementi di dat.gui quando si clicca sulla scena
 	canvas.addEventListener('pointerdown', () => {
@@ -403,6 +434,7 @@ async function main() {
 
 	// Generazione Fiori
 	const flowerColliders = [];
+	const animatedFlowers = [];
 
 	for (let i = 0; i < FLOWERS.count; i++) {
 		const angle = Math.random() * Math.PI * 2;
@@ -420,6 +452,21 @@ async function main() {
 			invertUVY: true,
 			type: 'flower'
 		});
+
+		// Salviamo parametri utili per la rotazione
+		flowerGO.baseScale = scale;
+		flowerGO.basePosition = [x, 0, z];
+		flowerGO.currentRotationY = rot;
+
+		// Animiamo solo la metà dei fiori
+		if (i % 2 === 0) {
+			// Direzione: 1 = orario, -1 = antiorario (alternato in base all'indice o casuale)
+			const direction = i % 4 === 0 ? 1 : -1;
+			const speed = 0.5 + Math.random() * 1.0;
+
+			flowerGO.rotationSpeed = speed * direction;
+			animatedFlowers.push(flowerGO);
+		}
 
 		flowerGO.setModelMatrix(
 			buildModelMatrix(flower.bounds, {
@@ -450,7 +497,7 @@ async function main() {
 		fogNear: FOG.near,
 		fogFar: FOG.far
 	};
-	const player = new PlayerController([0, 0, 9.0], 12);
+	const player = new PlayerController([0, 0, 9.0], 5);
 	const camera = new Camera(CAMERA.position, [0, 0, 0], canvas);
 	camera.followTarget = player;
 	camera.yaw = 0;
@@ -565,6 +612,19 @@ async function main() {
 		}
 		// Calcolo del colore finale scalato per l'intensità
 		finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
+
+		// Aggiorna fiori rotanti
+		for (const f of animatedFlowers) {
+			f.currentRotationY += deltaTime * f.rotationSpeed;
+			f.setModelMatrix(
+				buildModelMatrix(flower.bounds, {
+					scaleMul: f.baseScale,
+					placeOnGround: true,
+					translate: f.basePosition,
+					rotateY: f.currentRotationY
+				})
+			);
+		}
 
 		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
