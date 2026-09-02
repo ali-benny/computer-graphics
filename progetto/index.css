@@ -67,7 +67,7 @@ a:hover {
 
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1210px) {
 	h3,a,#audio, .wasd-container, .key, #wasd-overlay {
 		display: none;
 	}

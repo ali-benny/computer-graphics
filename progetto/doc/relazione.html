@@ -189,6 +189,7 @@
         <li><code>player.js</code> gestisce movimento, accelerazione, attrito e collisioni;</li>
         <li><code>mobileControls.js</code>, <code>mobile-player.js</code> e <code>mobile-camera.js</code> costruiscono i controlli touch per movimento e visuale;</li>
         <li><code>gameObject.js</code> raccoglie mesh, texture, colore e matrice di un oggetto;</li>
+        <li><code>cycleDayNight.js</code> gestisce il ciclo automatico giorno/notte, interpolando i parametri di luce e skybox tra i preset "Alba", "Mezzogiorno", "Tramonto" e "Notte". Ogni transizione dura 5 secondi;</li>
         <li><code>const.js</code> raccoglie i percorsi delle risorse e i parametri della scena, della camera e del rendering.</li>
       </ul>
       <p>Il caricamento delle risorse viene gestito in modo asincrono: file OBJ e texture vengono richiesti tramite funzioni basate su <code>fetch</code> e caricamento delle immagini, mentre <code>Promise.all</code> permette di attendere contemporaneamente più risorse prima di creare la scena e avviare il render loop.</p>
