@@ -18,7 +18,7 @@ texture mapping (almeno due oggetti 3D devono avere una texture applicata e alme
 pannello di controllo su schermo (si preveda un pannello di controllo in cui usando testo e grafica 2D si visualizzino le opzioni a disposizione dell'utente, ecc.);
 si ponga attenzione che il tutto sia fruibile anche da un dispositivo mobile (gestione eventi touch);
 advanced rendering (opzionale)(da menu' si preveda l'attivazione/disattivazione di almeno una tecnica di resa avanzata come per esempio: ombre, trasparenze, riflessioni, bump-mapping, ecc.)
-Elementi di Giudizio
+Elementi di Giudizio['']
 Elementi qualificanti il progetto saranno l'originalità delle scelte (tipo di applicazione, oggetti, scenografia, texture, ecc.) e le funzionalità dal punto di vista grafico del codice realizzato. Si rammenti che il progetto è sulla grafica 3D.
 Consegna
 Si richiede di consegnare un archivio cognome.zip (file zippato) contenente due cartelle:

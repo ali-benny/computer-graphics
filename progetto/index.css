@@ -60,13 +60,13 @@ a:hover {
 		left: auto;
 	}
 
-	.wasd-container {
-		display: none;
-	}
 }
 
 @media (max-width: 1080px) {
 	h3,a {
+		display: none;
+	}
+	.wasd-container, .key, #wasd-overlay {
 		display: none;
 	}
 }
