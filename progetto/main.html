@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html data-theme="light">
+
+<head>
+	<script type="text/javascript" src="lib/dat.gui.js"></script>
+	<!--         per ricaricare sempre la pagina da zero e non usare la cache      -->
+	<META HTTP-EQUIV="Pragma" CONTENT="no-cache">
+	<META HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+	<link rel="icon" href="img/favicon.png" type="image/png">
+	<title>Alice Benatti | Computer Graphics</title>
+	<link href="./index.css" rel="stylesheet">
+</head>
+
+<body>
+	<div class="overlay">
+		<img src="img/titolo.png" class="overlay-title" alt="Titolo" />
+		<h3>Clicca con il mouse sulla scena per <u>abilitare/disabilitare</u> la rotazione della visuale</h3>
+		<a href="doc/relazione.html" target="_blank">Vai alla Relazione</a>
+		<div id="wasd-overlay" class="wasd-container">
+			<div class="wasd-row">
+				<div class="key" id="key-w">W</div>
+			</div>
+			<div class="wasd-row">
+				<div class="key" id="key-a">A</div>
+				<div class="key" id="key-s">S</div>
+				<div class="key" id="key-d">D</div>
+			</div>
+		</div>
+	</div>
+	<script type="module" src="main.js"></script>
+</body>
+
+</html>
