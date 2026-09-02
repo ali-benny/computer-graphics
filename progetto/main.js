@@ -5,6 +5,7 @@ import { createCanvas, Renderer } from './renderer.js';
 import { Camera } from './camera.js';
 import { PlayerController } from './player.js';
 import { mobileControlsEnabled } from './mobileControls.js';
+import { dayNightCycleUpdate } from './cycleDayNight.js';
 import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
 import GameObject from './gameObject.js';
 import {
@@ -17,6 +18,7 @@ import {
 	DEFAULT_SKY_COLOR_HORIZON,
 	DEFAULT_SKY_COLOR_ZENITH,
 	DEFAULT_TIME_OF_DAY,
+	DEFAULT_DAY_NIGHT_CYCLE,
 	FLOWERS,
 	FOG,
 	GROUND,
@@ -95,6 +97,7 @@ function createControlPanel(state, canvas, camera) {
 	const lightFolder = gui.addFolder('Illuminazione');
 
 	lightFolder.add(state, 'rotateLight').name('Luce Orbitante');
+	lightFolder.add(state, 'dayNightCycle').name('Ciclo Giorno/Notte Automatico');
 
 	state.timeOfDay = DEFAULT_TIME_OF_DAY;
 	lightFolder
@@ -120,6 +123,7 @@ function createControlPanel(state, canvas, camera) {
 		});
 
 	lightFolder.add(state, 'lightIntensity', 0.0, 2.0, 0.05).name('Intensità');
+	lightFolder.addColor(state, 'lightColor').name('Colore Luce');
 	lightFolder.open();
 
 	// --- CARTELLA EFFETTI ---
@@ -210,7 +214,7 @@ function createControlPanel(state, canvas, camera) {
 
 	mobileControlsEnabled(inputActions, camera);
 
-	return { inputActions };
+	return { inputActions, gui };
 }
 
 async function loadModelWithResources(gl, modelPath, texturePath) {
@@ -489,6 +493,8 @@ async function main() {
 
 	const state = {
 		rotateLight: DEFAULT_ROTATE_LIGHT,
+		dayNightCycle: DEFAULT_DAY_NIGHT_CYCLE,
+		timeOfDay: DEFAULT_TIME_OF_DAY,
 		lightColor: [...DEFAULT_LIGHT_COLOR],
 		lightIntensity: DEFAULT_LIGHT_INTENSITY,
 		skyColorHorizon: [...DEFAULT_SKY_COLOR_HORIZON],
@@ -610,6 +616,7 @@ async function main() {
 		} else {
 			lightDir = [0.0, -0.5, -1.0];
 		}
+		dayNightCycleUpdate(deltaTime, state, hud);
 		// Calcolo del colore finale scalato per l'intensità
 		finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
 

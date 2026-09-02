@@ -150,6 +150,7 @@
       <h2>1. Obiettivo e idea dell'applicazione</h2>
       <p class="intro">Il progetto realizza una scena 3D interattiva ispirata a una piccola isola: il giocatore controlla un personaggio, si muove intorno a una casa, alberi e fiori e osserva l'ambiente attraverso una camera in terza persona.</p>
       <p>L'applicazione e' stata sviluppata con HTML5, JavaScript, WebGL e GLSL, utilizzando anche <code>dat.GUI</code> per il pannello di controllo. La scena utilizza modelli OBJ, texture 2D, illuminazione per-pixel e una deformazione cilindrica del terreno per ottenere un effetto visivo simile a un piccolo mondo curvo.</p>
+      <p>Per rendere l'esperienza piu' immersiva e coerente con l'atmosfera del gioco, e' stata aggiunta una musica di sottofondo in ciclo continuo. L'audio viene avviato al primo click o tocco dell'utente, così da rispettare le limitazioni dei browser sull'autoplay, oppure direttamente tramite il controller audio presente nell'interfaccia Desktop.</p>
     </section>
 
     <section>
@@ -190,6 +191,7 @@
         <li><code>gameObject.js</code> raccoglie mesh, texture, colore e matrice di un oggetto;</li>
         <li><code>const.js</code> raccoglie i percorsi delle risorse e i parametri della scena, della camera e del rendering.</li>
       </ul>
+      <p>Il caricamento delle risorse viene gestito in modo asincrono: file OBJ e texture vengono richiesti tramite funzioni basate su <code>fetch</code> e caricamento delle immagini, mentre <code>Promise.all</code> permette di attendere contemporaneamente più risorse prima di creare la scena e avviare il render loop.</p>
     </section>
 
     <section>
@@ -236,7 +238,7 @@
       <p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati movimento, collisioni, camera, nuvole, fiori, dissolvenza degli alberi e della casa, illuminazione e render.</p>
       <p>La luce puo' ruotare attorno alla scena. Inoltre gli alberi e la casa vicini alla camera vengono resi progressivamente trasparenti tramite interpolazione dell'opacita'. Per le istanze trasparenti il renderer disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
       <p>Le nuvole si muovono orizzontalmente e vengono riposizionate sul lato opposto quando superano il bordo dell'area di gioco. Una parte dei fiori ruota continuamente attorno all'asse Y, con velocita' e direzione variabili.</p>
-      <p>Il pannello <code>dat.GUI</code> permette di selezionare Alba, Mezzogiorno, Tramonto o Notte. Ogni preset modifica colore e intensita' della luce e i colori del gradiente della skybox. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
+      <p>Il pannello <code>dat.GUI</code> permette di selezionare manualmente Alba, Mezzogiorno, Tramonto o Notte, oppure di attivare il ciclo automatico giorno/notte. I preset modificano colore e intensita' della luce e i colori del gradiente della skybox; nel ciclo automatico questi valori vengono interpolati gradualmente tra una fase e la successiva. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
     </section>
 
     <section>
@@ -245,27 +247,18 @@
         <li><strong>WASD:</strong> movimento del personaggio;</li>
         <li><strong>mouse:</strong> spostamento del cursore per la parallasse della visuale; il click sul canvas abilita o disabilita l'effetto;</li>
         <li><strong>touch:</strong> D-pad virtuale per il movimento e pad circolare per la visuale;</li>
-        <li><strong>dat.GUI:</strong> luce orbitante, colore e intensita' della luce, preset della giornata e fog;</li>
+        <li><strong>dat.GUI:</strong> luce orbitante, colore e intensita' della luce, selezione dei preset della giornata, ciclo automatico giorno/notte e fog;</li>
         <li><strong>interfaccia:</strong> il collegamento alla relazione e la rappresentazione dei tasti sono disponibili nella schermata iniziale.</li>
+        <li><strong>musica:</strong> la musica viene avviata automaticamente quando possibile e, in caso di blocco dell'autoplay da parte del browser, parte al primo click o tocco dell'utente; il controller audio permette inoltre di avviarla, interromperla e regolarne il volume.</li>
       </ul>
       <div class="note">Su dispositivi mobili i controlli touch vengono visualizzati automaticamente e permettono di sostituire sia la tastiera sia il mouse.</div>
     </section>
 
     <section>
-      <h2>10. Limiti e sviluppi futuri</h2>
-      <ul>
-        <li>aggiungere un'animazione visibile e autonoma a un ulteriore elemento della scena, come un oggetto decorativo;</li>
-        <li>aggiungere ombre, se si desidera estendere ulteriormente il rendering avanzato;</li>
-        <li>preparare l'archivio finale con le cartelle <code>project</code> e <code>doc</code> come richiesto dalla consegna;</li>
-        <li>verificare il progetto su Chrome in ambiente Linux o Mac, prestando attenzione agli errori WebGL relativi ai buffer e alle estensioni.</li>
-      </ul>
-    </section>
-
-    <section>
-      <h2>11. Avvio dell'applicazione</h2>
+      <h2>10. Avvio dell'applicazione</h2>
       <p>L'applicazione deve essere servita tramite un server HTTP locale per permettere il caricamento degli OBJ e delle texture. Dalla cartella <code>progetto</code> e' possibile usare, ad esempio:</p>
       <p><code>python -m http.server</code></p>
-      <p>Successivamente si apre <code>http://localhost:8000/index.html</code> nel browser (è consigliato Chrome per una migliore esperienza)</p>
+      <p>Successivamente si apre <code>http://localhost:8000/main.html</code> nel browser (è consigliato Chrome per una migliore esperienza)</p>
     </section>
   </main>
 

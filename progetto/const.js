@@ -129,3 +129,4 @@ export const DEFAULT_SKY_COLOR_ZENITH = [0.15, 0.4, 0.85];
 export const DEFAULT_LIGHT_INTENSITY = 1.0;
 export const DEFAULT_FOG_ENABLED = false;
 export const DEFAULT_ROTATE_LIGHT = false;
+export const DEFAULT_DAY_NIGHT_CYCLE = false;

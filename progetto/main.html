@@ -18,6 +18,10 @@
 		<img src="img/titolo.png" class="overlay-title" alt="Titolo" />
 		<h3>Clicca con il mouse sulla scena per <u>abilitare/disabilitare</u> la rotazione della visuale</h3>
 		<a href="doc/relazione.html" target="_blank">Vai alla Relazione</a>
+		<audio id="audio" src="img/music.mp3" autoplay controls loop>
+			<h3>Oh no, se stai leggendo questo cambia browser! Questo non supporta l'audio.</h3>
+		</audio>
+
 		<div id="wasd-overlay" class="wasd-container">
 			<div class="wasd-row">
 				<div class="key" id="key-w">W</div>
@@ -30,6 +34,24 @@
 		</div>
 	</div>
 	<script type="module" src="main.js"></script>
+	<script>
+		const audio = document.getElementById('audio');
+
+		// Funzione che avvia l'audio al primo click/tocco ovunque nella pagina
+		function enableAudio() {
+			audio.play().then(() => {
+				// Audio avviato con successo, rimuoviamo i listener
+				window.removeEventListener('click', enableAudio);
+				window.removeEventListener('touchstart', enableAudio);
+			}).catch(error => {
+				console.log("Autoplay bloccato dal browser:", error);
+			});
+		}
+
+		// In ascolto per il primo click o tocco dell'utente
+		window.addEventListener('click', enableAudio);
+		window.addEventListener('touchstart', enableAudio);
+	</script>
 </body>
 
 </html>
