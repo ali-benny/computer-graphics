@@ -254,6 +254,20 @@ export function setMeshAttributes(gl, program, mesh) {
 		}
 	}
 
+	// Disabilita gli attributi di istanza se non sono necessari
+	const instLocs = [
+        gl.getAttribLocation(program, 'aInstanceModelMatrix0'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix1'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix2'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix3'),
+        gl.getAttribLocation(program, 'aInstanceOpacity')
+    ];
+    for (const loc of instLocs) {
+        if (loc >= 0) {
+            gl.disableVertexAttribArray(loc);
+        }
+    }
+
 	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuffer);
 }
 
