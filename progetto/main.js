@@ -4,7 +4,7 @@ import { createMesh, loadTexture } from './shaderUtils.js';
 import { createCanvas, Renderer } from './renderer.js';
 import { Camera } from './camera.js';
 import { PlayerController } from './player.js';
-import { mobileControlsEnabled } from './mobileControls.js';
+import { createControlPanel } from './panel.js';
 import { dayNightCycleUpdate } from './cycleDayNight.js';
 import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
 import GameObject from './gameObject.js';
@@ -26,10 +26,12 @@ import {
 	RENDERING,
 	STATIC_COLLIDERS,
 	TEXTURE_PATHS,
-	TIME_PRESETS,
 	TREES
 } from './const.js';
 
+/**
+ * Crea la geometria di un piano per la bacheca della foto
+ */
 function createPhotoBoardGeometry(width, height) {
 	const hw = width * 0.5,
 		hh = height * 0.5;
@@ -40,7 +42,6 @@ function createPhotoBoardGeometry(width, height) {
 		indices: new Uint32Array([0, 1, 2, 0, 2, 3])
 	};
 }
-
 function composeSignPart(baseMatrix, localX, localY, localZ, scaleX, scaleY, scaleZ) {
 	return mat4Multiply(
 		baseMatrix,
@@ -48,36 +49,49 @@ function composeSignPart(baseMatrix, localX, localY, localZ, scaleX, scaleY, sca
 	);
 }
 
+/**
+ * Return una matrice di trasformazione 4x4 per posizionare un oggetto nello spazio 3D
+ * convertendo le sue coordinate locali in coordinate globali.
+ */
 function buildModelMatrix(bounds, options = {}) {
 	const scale = bounds.uniformScale * (options.scaleMul ?? 1);
 	const translate = options.translate ?? [0, 0, 0];
 	const rotateY = options.rotateY ?? 0;
 	const minRelY = bounds.min[1] - bounds.center[1];
 	const placeOnGroundY = options.placeOnGround ? -minRelY * scale : 0;
-	const extra = options.ySinkMul ? options.ySinkMul * scale : 0;
+	const extra = options.ySinkMul ? options.ySinkMul * scale : 0; // affonda l'oggetto nel terreno
 	const finalTranslate = [translate[0], translate[1] + placeOnGroundY - extra, translate[2]];
 
 	return mat4Multiply(
-		mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]),
+		mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]), // posizionamento nel punto desiderato
 		mat4Multiply(
 			mat4RotateY(rotateY),
 			mat4Multiply(
-				mat4Scale(scale, scale, scale),
-				mat4Translate(-bounds.center[0], -bounds.center[1], -bounds.center[2])
+				mat4Scale(scale, scale, scale), // scalatura uniforme al contesto
+				mat4Translate(-bounds.center[0], -bounds.center[1], -bounds.center[2]) // centramento su [0,0,0]
 			)
 		)
 	);
 }
 
+/**
+ * Gestione delle collisioni
+ *
+ * Restituisce i bounds trasformati di un oggetto 3D proiettati sul piano XZ,
+ * dato un bounding box locale e una matrice di trasformazione.
+ */
 function getTransformedBoundsXZ(bounds, matrix) {
 	const min = [Infinity, Infinity];
 	const max = [-Infinity, -Infinity];
 
+	// Itera su tutti gli 8 vertici del bounding box locale
 	for (const x of [bounds.min[0], bounds.max[0]]) {
 		for (const y of [bounds.min[1], bounds.max[1]]) {
 			for (const z of [bounds.min[2], bounds.max[2]]) {
+				// Applica la matrice di trasformazione ad ogni vertice
 				const worldX = matrix[0] * x + matrix[4] * y + matrix[8] * z + matrix[12];
 				const worldZ = matrix[2] * x + matrix[6] * y + matrix[10] * z + matrix[14];
+				// Confronto le coordinate
 				min[0] = Math.min(min[0], worldX);
 				min[1] = Math.min(min[1], worldZ);
 				max[0] = Math.max(max[0], worldX);
@@ -89,143 +103,23 @@ function getTransformedBoundsXZ(bounds, matrix) {
 	return { min: [min[0], 0, min[1]], max: [max[0], 3, max[1]] };
 }
 
-function createControlPanel(state, canvas, camera) {
-	// Inizializza dat.GUI
-	const gui = new dat.GUI({ width: 300 });
-
-	// --- CARTELLA ILLUMINAZIONE ---
-	const lightFolder = gui.addFolder('Illuminazione');
-
-	lightFolder.add(state, 'rotateLight').name('Luce Orbitante');
-	lightFolder.add(state, 'dayNightCycle').name('Ciclo Giorno/Notte Automatico');
-
-	state.timeOfDay = DEFAULT_TIME_OF_DAY;
-	lightFolder
-		.add(state, 'timeOfDay', Object.keys(TIME_PRESETS))
-		.name('Fase Giornata')
-		.onChange((presetName) => {
-			const p = TIME_PRESETS[presetName];
-			// aggiorna valori luce
-			state.lightColor[0] = p.color[0];
-			state.lightColor[1] = p.color[1];
-			state.lightColor[2] = p.color[2];
-			state.lightIntensity = p.intensity;
-
-			// aggiorna colori skybox
-			state.skyColorHorizon[0] = p.skyColorHorizon[0];
-			state.skyColorHorizon[1] = p.skyColorHorizon[1];
-			state.skyColorHorizon[2] = p.skyColorHorizon[2];
-
-			state.skyColorZenith[0] = p.skyColorZenith[0];
-			state.skyColorZenith[1] = p.skyColorZenith[1];
-			state.skyColorZenith[2] = p.skyColorZenith[2];
-			gui.updateDisplay();
-		});
-
-	lightFolder.add(state, 'lightIntensity', 0.0, 2.0, 0.05).name('Intensità');
-	lightFolder.addColor(state, 'lightColor').name('Colore Luce');
-	lightFolder.open();
-
-	// --- CARTELLA EFFETTI ---
-	const fogFolder = gui.addFolder('Effetti Avanzati');
-	fogFolder.add(state, 'enableFog').name('Abilita Nebbia');
-	fogFolder.add(state, 'fogNear', FOG.nearMin, FOG.nearMax, 1).name('Nebbia Vicina');
-
-	const fogFarController = fogFolder
-		.add(state, 'fogFar', FOG.farMin, FOG.farMax, 1)
-		.name('Nebbia Lontana');
-	fogFolder.add(state, 'fogNear').onChange((val) => {
-		if (state.fogFar <= val) {
-			state.fogFar = val + 1;
-			fogFarController.updateDisplay();
-		}
-	});
-
-	// --- GESTIONE INPUT TASTIERA (WASD) ---
-	const inputActions = {
-		moveForward: false,
-		moveBackward: false,
-		moveLeft: false,
-		moveRight: false
-	};
-
-	const keyMap = {
-		w: { action: 'moveForward', element: document.getElementById('key-w') },
-		s: { action: 'moveBackward', element: document.getElementById('key-s') },
-		a: { action: 'moveLeft', element: document.getElementById('key-a') },
-		d: { action: 'moveRight', element: document.getElementById('key-d') }
-	};
-	const handleKey = (e, isDown) => {
-		// Se l'utente sta scrivendo in un campo di testo (es. un input di dat.gui), ignora i tasti WASD
-		if (
-			e.target.tagName === 'INPUT' &&
-			(e.target.type === 'text' || e.target.type === 'number')
-		) {
-			return;
-		}
-
-		const key = e.key.toLowerCase();
-		const mapping = keyMap[key];
-		if (mapping) {
-			inputActions[mapping.action] = isDown;
-			
-			// Aggiunge o rimuove la classe per illuminare il tasto a schermo
-			if (mapping.element) {
-				mapping.element.classList.toggle('active', isDown);
-			}
-
-			if (['w', 'a', 's', 'd'].includes(key)) {
-				e.preventDefault();
-			}
-		}
-	};
-
-	window.addEventListener('keydown', (e) => handleKey(e, true));
-	window.addEventListener('keyup', (e) => handleKey(e, false));
-
-	// Gestione del Click/Touch sui Pulsanti a Schermo
-	Object.values(keyMap).forEach(({ action, element }) => {
-		if (!element) return;
-
-		const pressAction = (e) => {
-			e.preventDefault();
-			inputActions[action] = true;
-			element.classList.add('active');
-		};
-
-		const releaseAction = (e) => {
-			e.preventDefault();
-			inputActions[action] = false;
-			element.classList.remove('active');
-		};
-
-		element.addEventListener('pointerdown', pressAction);
-		element.addEventListener('pointerup', releaseAction);
-		element.addEventListener('pointerleave', releaseAction);
-		element.addEventListener('pointercancel', releaseAction);
-	});
-
-	// Toglie il focus dagli elementi di dat.gui quando si clicca sulla scena
-	canvas.addEventListener('pointerdown', () => {
-		if (document.activeElement && document.activeElement.blur) {
-			document.activeElement.blur();
-		}
-	});
-
-	mobileControlsEnabled(inputActions, camera);
-
-	return { inputActions, gui };
-}
-
+/**
+ * Gestisce il caricamento di un modello:
+ * carica il modello, ne calcola le dimensioni e bounds, alloca i buffer sulla GPU e carica la texture
+ *
+ * return un unico oggetto con mesh, bounds e texture
+ */
 async function loadModelWithResources(gl, modelPath, texturePath) {
 	const geometry = await loadOBJ(modelPath);
 	const bounds = computeBounds(geometry.positions);
 	const mesh = createMesh(gl, geometry);
 	let texture = null;
-	try {
-		texture = await loadTexture(gl, texturePath);
-	} catch (e) {
-		console.warn('Texture non caricata:', texturePath, e);
+	if (texturePath) {
+		try {
+			texture = await loadTexture(gl, texturePath);
+		} catch (e) {
+			console.warn('Texture non caricata:', texturePath, e);
+		}
 	}
 	return { mesh, bounds, texture };
 }
@@ -239,7 +133,7 @@ async function main() {
 		loadOBJ(MODEL_PATHS.house),
 		loadModelWithResources(gl, MODEL_PATHS.char, TEXTURE_PATHS.char),
 		loadModelWithResources(gl, MODEL_PATHS.tree, TEXTURE_PATHS.tree),
-		loadOBJ(MODEL_PATHS.cloud),
+		loadModelWithResources(gl, MODEL_PATHS.cloud),
 		loadModelWithResources(gl, MODEL_PATHS.flower1, TEXTURE_PATHS.flower1)
 	]);
 
@@ -283,8 +177,6 @@ async function main() {
 	const houseCollider = { type: 'aabb', name: 'house', ...houseBoundsXZ };
 
 	// Nuvolette
-	const cloudBounds = computeBounds(cloud.positions);
-	const cloudMesh = createMesh(gl, cloud);
 	const cloudObjects = [];
 
 	for (let i = 0; i < CLOUDS.count; i++) {
@@ -298,12 +190,12 @@ async function main() {
 		const cloudVelocityX = CLOUDS.minVelocityX + Math.random() * CLOUDS.velocityRangeX;
 
 		cloudObjects.push({
-			mesh: cloudMesh,
+			mesh: cloud.mesh,
 			position: cloudPosition,
 			scale: cloudScale,
 			velocityX: cloudVelocityX,
 			rotationY: CLOUDS.rotationY,
-			modelMatrix: buildModelMatrix(cloudBounds, {
+			modelMatrix: buildModelMatrix(cloud.bounds, {
 				scaleMul: cloudScale,
 				translate: cloudPosition,
 				rotateY: CLOUDS.rotationY
@@ -458,9 +350,9 @@ async function main() {
 		});
 
 		// Salviamo parametri utili per la rotazione
-		flowerGO.baseScale = scale;
-		flowerGO.basePosition = [x, 0, z];
-		flowerGO.currentRotationY = rot;
+		flowerGO.scale = scale;
+		flowerGO.position = [x, 0, z];
+		flowerGO.rotationY = rot;
 
 		// Animiamo solo la metà dei fiori
 		if (i % 2 === 0) {
@@ -527,10 +419,10 @@ async function main() {
 	});
 	objects.splice(1, 0, playerGO);
 
+	// ====== pre-allocazioni animate() ======
 	let lastTime = performance.now(),
 		lightAngle = 0;
 
-	// ====== pre-allocazioni animate() ======
 	const colliders = [...STATIC_COLLIDERS, houseCollider, ...treeColliders, ...flowerColliders];
 
 	let cameraForward = [0, 0, 0];
@@ -552,7 +444,7 @@ async function main() {
 				cloudObject.position[0] = CLOUDS.areaX + CLOUDS.wrapMargin;
 			}
 
-			cloudObject.modelMatrix = buildModelMatrix(cloudBounds, {
+			cloudObject.modelMatrix = buildModelMatrix(cloud.bounds, {
 				scaleMul: cloudObject.scale,
 				translate: cloudObject.position,
 				rotateY: cloudObject.rotationY
