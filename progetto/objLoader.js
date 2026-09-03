@@ -32,16 +32,16 @@ export function parseOBJ(objText) {
     const parts = line.split(/\s+/);
     const op = parts[0];
 
-    if (op === "v") {
+    if (op === "v") { // vertici
       positionsSrc.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
-    } else if (op === "vn") {
+    } else if (op === "vn") { // normali
       normalsSrc.push([parseFloat(parts[1]), parseFloat(parts[2]), parseFloat(parts[3])]);
-    } else if (op === "vt") {
+    } else if (op === "vt") { // coordinate texture
       uvsSrc.push([parseFloat(parts[1]), parseFloat(parts[2])]);
-    } else if (op === "usemtl") {
+    } else if (op === "usemtl") { // materiale corrente
       currentMaterial = parts.slice(1).join(" ") || "default";
       getMaterialGroup(currentMaterial);
-    } else if (op === "f") {
+    } else if (op === "f") {  // truangolazione delle facce
       const faceTokens = parts.slice(1);
       for (let i = 1; i < faceTokens.length - 1; i += 1) {
         const tri = [faceTokens[0], faceTokens[i], faceTokens[i + 1]];
@@ -59,6 +59,7 @@ export function parseOBJ(objText) {
             const p = positionsSrc[pIndex > 0 ? pIndex - 1 : positionsSrc.length + pIndex];
             positions.push(p[0], p[1], p[2]);
 
+          // - Gestione indici negativi -
             if (nIndex !== 0) {
               const n = normalsSrc[nIndex > 0 ? nIndex - 1 : normalsSrc.length + nIndex];
               normals.push(n[0], n[1], n[2]);
@@ -85,7 +86,7 @@ export function parseOBJ(objText) {
     }
   }
 
-  // Se mancano le normali, generate smooth normals.
+  // Se mancano le normali le calcoliamo automaticamente [Smooth Normals]
   let hasRealNormals = false;
   for (let i = 0; i < normals.length; i += 3) {
     if (normals[i] !== 0 || normals[i + 1] !== 0 || normals[i + 2] !== 0) {
@@ -129,6 +130,7 @@ export function parseOBJ(objText) {
     }
   }
 
+  // Convertiamo i gruppi di materiali in array tipizzati
   const materialGroupsOut = {};
   for (const [materialName, groupIndices] of materialGroups.entries()) {
     if (groupIndices.length > 0) {
@@ -145,6 +147,9 @@ export function parseOBJ(objText) {
   };
 }
 
+/**
+ * calcola la bounding box e il centro del modello, insieme a un fattore di scala uniforme per normalizzare le dimensioni
+ */
 export function computeBounds(positions) {
   const min = [Infinity, Infinity, Infinity];
   const max = [-Infinity, -Infinity, -Infinity];

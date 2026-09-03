@@ -57,7 +57,6 @@ export const FLOWERS = {
 };
 
 export const CAMERA = {
-	// position: [0, 6.4, 6.6],
 	rollingBackDistance: 8.0,
 	rollingHeight: 3.5,
 	rollingLookAhead: 0.0,

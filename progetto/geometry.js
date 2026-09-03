@@ -48,7 +48,7 @@ export function createCube(size = 1) {
 }
 
 export function createCylinder(width = 60, depth = 60, subdivisionsX = 60, subdivisionsZ = 60) {
-	// questa funzione in realtà genera una fitta griglia PIATTA sul piano XZ.
+	// questa funzione in realtà genera una fitta griglia PIATTA sul piano XZ
 	// Sarà il Vertex Shader a curvarla matematicamente a forma di cilindro/tronco!
 
 	const positions = [];

@@ -87,10 +87,6 @@ void main() {
   float texAlpha = 1.0;
 
   if (uUseTexture) {
-    // vec2 uv = vUV;
-    // if (uInvertUVY) {
-    //   uv.y = 1.0 - uv.y;
-    // }
     vec4 texColor = texture2D(uTexture, vUV);
     baseCol = texColor.rgb;
     texAlpha = texColor.a;
@@ -128,9 +124,6 @@ uniform mat4 uView;
 varying vec3 vWorldDir;
 
 void main() {
-    // mat3 viewRotation = mat3(uView);
-    
-    // vWorldDir = viewRotation * aPosition;
 	vWorldDir = aPosition;
 
 	// Rimuoviamo la traslazione dalla View Matrix mantenendo le rotazioni della camera
@@ -277,7 +270,7 @@ export function drawMeshInstanced(gl, program, mesh, matrices, opacities, instan
 
 	setMeshAttributes(gl, program, mesh);
 
-	// 1. Buffer delle Matrici di Istanza
+	// Buffer delle Matrici di Istanza
 	if (!instanceBuffer) instanceBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.DYNAMIC_DRAW);
@@ -297,7 +290,7 @@ export function drawMeshInstanced(gl, program, mesh, matrices, opacities, instan
 		}
 	});
 
-	// 2. Buffer delle Opacità di Istanza
+	// Buffer delle Opacità di Istanza
 	const locOpacity = gl.getAttribLocation(program, 'aInstanceOpacity');
 	if (locOpacity >= 0 && opacities) {
 		if (!opacityBuffer) opacityBuffer = gl.createBuffer();

@@ -180,7 +180,7 @@ export class PlayerController {
     return pos;
   }
 
-  // Collider speciale per tenere il player dentro il mini-mondo.
+  // Collider speciale per tenere il player dentro il mini-mondo
   resolveBoundsCollision(pos, collider) {
     const { min, max } = collider;
     const r = this.radius;
