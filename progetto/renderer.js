@@ -8,7 +8,7 @@ import {
 	setMeshAttributes,
 	drawMesh,
 	drawMeshInstanced
-} from './shaderUtils.js';
+} from './shader.js';
 
 export class Renderer {
 	constructor(canvas) {

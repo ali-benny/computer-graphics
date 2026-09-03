@@ -2,397 +2,545 @@
 <html lang="it">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="../img/favicon.png" type="image/png">
-  <title>Alice Benatti | Relazione</title>
-  <style>
-    :root {
-      --ink: #202124;
-      --muted: #5f6368;
-      --accent: #c48d3f;
-      --accent-light: #e8f1f8;
-      --line: #d9e0e6;
-      --paper: #ffffff;
-      --background: #f3f5f7;
-    }
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="icon" href="../img/favicon.png" type="image/png">
+	<title>Alice Benatti | Relazione</title>
+	<script>
+		MathJax = {
+			tex: {
+				inlineMath: [['$', '$'], ['\\(', '\\)']],
+				displayMath: [['$$', '$$'], ['\\[', '\\]']]
+			}
+		};
+	</script>
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+	<style>
+		:root {
+			--ink: #202124;
+			--muted: #5f6368;
+			--accent: #c48d3f;
+			--accent-light: #e8f1f8;
+			--line: #d9e0e6;
+			--paper: #ffffff;
+			--background: #f3f5f7;
+		}
 
-    * {
-      box-sizing: border-box;
-    }
+		* {
+			box-sizing: border-box;
+		}
 
-    body {
-      margin: 0;
-      color: var(--ink);
-      background: var(--background);
-      font-family: sans-serif;
-      line-height: 1.65;
-    }
+		body {
+			margin: 0;
+			color: var(--ink);
+			background: var(--background);
+			font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+			line-height: 1.65;
+		}
 
-    header {
-      color: #fff563;
-      background: #9dffb0;
-    }
+		header {
+			color: #17324d;
+			background: #9dffb0;
+		}
 
-    header .content,
-    main {
-      width: min(100% - 3rem, 980px);
-      margin: 0 auto;
-    }
+		header .content,
+		main {
+			width: min(100% - 3rem, 980px);
+			margin: 0 auto;
+		}
 
-    h1,
-    h2,
-    h3 {
-      font-family: "Trebuchet MS", Arial, sans-serif;
-      line-height: 1.2;
-    }
+		h1,
+		h2,
+		h3,
+		h4 {
+			font-family: "Trebuchet MS", Arial, sans-serif;
+			line-height: 1.2;
+		}
 
-    h1 {
-      max-width: 760px;
-      margin: 0;
-      font-size: clamp(2.2rem, 5vw, 4rem);
-      letter-spacing: 0.02em;
-    }
+		h1 {
+			margin: 0;
+			font-size: clamp(2.2rem, 5vw, 3.5rem);
+			letter-spacing: 0.02em;
+		}
 
-    header p {
-      max-width: max-content;
-      margin: 1rem 0 0;
-      color: var(--accent);
-      font-size: 18pt;
-    }
+		header p {
+			max-width: max-content;
+			margin: 1rem 0 0;
+			color: var(--accent);
+			font-size: 18pt;
+		}
 
-    main {
-      padding: 2rem 0 4rem;
-    }
+		main {
+			padding: 2rem 0 4rem;
+		}
 
-    section {
-      margin: 0 0 1.5rem;
-      padding: 1.8rem 2rem;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-    }
+		section {
+			margin: 0 0 1.5rem;
+			padding: 1.8rem 2rem;
+			background: var(--paper);
+			border: 1px solid var(--line);
+			border-radius: 8px;
+		}
 
-    h2 {
-      margin-top: 0;
-      color: var(--accent);
-      border-bottom: 2px solid var(--accent-light);
-      padding-bottom: 0.5rem;
-    }
+		h2 {
+			margin-top: 0;
+			color: var(--accent);
+			border-bottom: 2px solid var(--accent-light);
+			padding-bottom: 0.5rem;
+		}
 
-    h3 {
-      margin-bottom: 0.3rem;
-    }
+		h3 {
+			margin-bottom: 0.3rem;
+		}
 
-    p {
-      margin: 0.7rem 0;
-    }
+		p {
+			margin: 0.7rem 0;
+		}
 
-    ul {
-      padding-left: 1.4rem;
-    }
+		ul,
+		ol {
+			padding-left: 1.4rem;
+		}
 
-    li {
-      margin: 0.35rem 0;
-    }
+		li {
+			margin: 0.35rem 0;
+		}
 
-    code {
-      padding: 0.1rem 0.3rem;
-      color: #17324d;
-      background: #eef2f5;
-      border-radius: 3px;
-      font-family: Consolas, monospace;
-      font-size: 0.92em;
-    }
+		code {
+			padding: 0.1rem 0.3rem;
+			color: #17324d;
+			background: #eef2f5;
+			border-radius: 4px;
+			font-family: Consolas, Monaco, monospace;
+			font-size: 0.9em;
+		}
 
-    .intro {
-      font-size: 1.08rem;
-      color: var(--muted);
-    }
+		.intro {
+			font-size: 1.08rem;
+			color: var(--muted);
+		}
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 1rem;
-    }
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 1rem;
+		}
 
-    th,
-    td {
-      padding: 0.7rem;
-      text-align: left;
-      vertical-align: top;
-      border-bottom: 1px solid var(--line);
-    }
+		th,
+		td {
+			padding: 0.7rem;
+			text-align: left;
+			vertical-align: top;
+			border-bottom: 1px solid var(--line);
+		}
 
-    th {
-      color: #17324d;
-      background: var(--accent-light);
-      font-family: "Trebuchet MS", Arial, sans-serif;
-    }
+		th {
+			color: #17324d;
+			background: var(--accent-light);
+			font-family: "Trebuchet MS", Arial, sans-serif;
+		}
 
-    .status-ok {
-      color: #176b3a;
-      font-weight: bold;
-    }
+		.note {
+			padding: 1rem 1.2rem;
+			border-left: 4px solid var(--accent);
+			background: #f4f8fb;
+			margin: 1rem 0;
+			border-radius: 0 4px 4px 0;
+		}
 
-    .status-todo {
-      color: #9a4d00;
-      font-weight: bold;
-    }
+		.formula {
+			background: #f8f9fa;
+			padding: 0.8rem;
+			border-radius: 6px;
+			text-align: center;
+			font-family: "Times New Roman", Times, serif;
+			font-size: 1.1em;
+			border: 1px dashed var(--line);
+			margin: 1rem 0;
+		}
 
-    .note {
-      padding: 1rem 1.2rem;
-      border-left: 4px solid var(--accent);
-      background: #f4f8fb;
-    }
+		footer {
+			color: var(--muted);
+			text-align: center;
+			padding: 1.5rem;
+			font-size: 0.9rem;
+		}
 
-    footer {
-      color: var(--muted);
-      text-align: center;
-      padding: 1.5rem;
-      font-size: 0.9rem;
-    }
+		@media (max-width: 640px) {
+			header {
+				padding: 3rem 1rem 2.5rem;
+			}
 
-    @media (max-width: 640px) {
-      header {
-        padding: 3rem 1rem 2.5rem;
-      }
+			header .content,
+			main {
+				width: min(100% - 2rem, 980px);
+			}
 
-      header .content,
-      main {
-        width: min(100% - 2rem, 980px);
-      }
+			section {
+				padding: 1.3rem;
+			}
 
-      section {
-        padding: 1.3rem;
-      }
+			table {
+				display: block;
+				overflow-x: auto;
+			}
 
-      table {
-        display: block;
-        overflow-x: auto;
-      }
+			th,
+			td {
+				min-width: 180px;
+			}
+		}
+		.toc {
+	background: var(--paper);
+	border: 1px solid var(--line);
+	border-radius: 8px;
+	padding: 1.5rem 2rem;
+	margin-bottom: 2rem;
+}
 
-      th,
-      td {
-        min-width: 180px;
-      }
-    }
-  </style>
+.toc h2 {
+	font-size: 1.4rem;
+	margin-top: 0;
+	border-bottom: 2px solid var(--accent-light);
+}
+
+/* Disposizione a 2 colonne in ordine sequenziale (alto -> basso) */
+.toc > ul {
+	columns: 2;
+	column-gap: 2.5rem;
+	list-style: none;
+	padding-left: 0;
+	margin: 0;
+}
+
+/* Evita che una sezione principale e i suoi elementi vengano spezzati a metà tra una colonna e l'altra */
+.toc > ul > li {
+	break-inside: avoid;
+	margin-bottom: 0.6rem;
+}
+
+/* Sotto-liste (h3) annidate */
+.toc ul ul {
+	list-style: none;
+	padding-left: 1rem;
+	margin: 0.2rem 0 0.4rem 0;
+}
+
+.toc li {
+	margin: 0.3rem 0;
+}
+
+.toc a {
+	color: #17324d;
+	text-decoration: none;
+	font-weight: 500;
+	transition: color 0.2s ease;
+}
+
+.toc a:hover {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+/* Responsive: 1 sola colonna su schermi piccoli */
+@media (max-width: 640px) {
+	.toc > ul {
+		columns: 1;
+	}
+}
+	</style>
 </head>
 
 <body>
-  <header>
-    <div class="content" style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
-      <a href="../main.html" style="max-width: 30%;">
-        <img src="../img/titolo.png" alt="Titolo" style="max-width: 100%; height: auto;" />
-      </a>
-      <p><b>Relazione del progetto d'esame di Computer Graphics<br>Alice Benatti</b>, matricola 0001241469<br>a.a.
-        2025/2026</p>
-    </div>
-  </header>
+	<header>
+		<div class="content" style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+			<a href="../main.html" style="max-width: 30%;">
+				<img src="../img/titolo.png" alt="Titolo" style="max-width: 100%; height: auto;" />
+			</a>
+			<p><b>Relazione del progetto d'esame di Computer Graphics<br>Alice Benatti</b>, matricola 0001241469<br>a.a.
+				2025/2026</p>
+		</div>
+	</header>
 
-  <main>
-    <section>
-      <h2>1. Obiettivo e idea dell'applicazione</h2>
-      <p class="intro">Il progetto realizza una scena 3D interattiva ispirata a una piccola isola: il giocatore
-        controlla un personaggio, si muove intorno a una casa, alberi e fiori e osserva l'ambiente attraverso una camera
-        in terza persona.</p>
-      <p>L'applicazione e' stata sviluppata con HTML5, JavaScript, WebGL e GLSL, utilizzando anche <code>dat.GUI</code>
-        per il pannello di controllo. La scena utilizza modelli OBJ, texture 2D, illuminazione per-pixel e una
-        deformazione cilindrica del terreno per ottenere un effetto visivo simile a un piccolo mondo curvo.</p>
-      <p>Per rendere l'esperienza piu' immersiva e coerente con l'atmosfera del gioco, e' stata aggiunta una musica di
-        sottofondo in ciclo continuo. L'audio viene avviato al primo click o tocco dell'utente, così da rispettare le
-        limitazioni dei browser sull'autoplay, oppure direttamente tramite il controller audio presente nell'interfaccia
-        Desktop.</p>
-    </section>
+	<main>
+		<section class="toc">
+			<h2>Indice dei Contenuti</h2>
+			<ul>
+				<li><a href="#sez-1">1. Obiettivo e idea dell'applicazione</a></li>
+				<li><a href="#sez-2">2. Scelte progettuali</a></li>
+				<li>
+					<a href="#sez-3">3. Scena e contenuti</a>
+					<ul>
+						<li><a href="#sez-3-1">Matematica delle Trasformazioni e Bounds Collisioni</a></li>
+						<li><a href="#sez-3-2">Asset 3D e risorse esterne</a></li>
+					</ul>
+				</li>
+				<li><a href="#sez-4">4. Organizzazione del codice</a></li>
+				<li><a href="#sez-5">5. Architettura e Workflow del Progetto</a></li>
+				<li>
+					<a href="#sez-6">6. Tecniche di Rendering e Shader</a>
+					<ul>
+						<li><a href="#sez-6-1">Curvatura del terreno e Skybox</a></li>
+						<li><a href="#sez-6-2">Proiezione, Camera e Trasparenze</a></li>
+						<li><a href="#sez-6-3">Illuminazione Phong/Lambertian</a></li>
+					</ul>
+				</li>
+				<li><a href="#sez-7">7. Texture e Materiali</a></li>
+				<li><a href="#sez-8">8. Fisica, Collisioni e Input Utente</a></li>
+				<li><a href="#sez-9">9. Animazione e tecniche avanzate</a></li>
+				<li><a href="#sez-10">10. Controlli e interfaccia</a></li>
+				<li><a href="#sez-11">11. Avvio dell'applicazione</a></li>
+			</ul>
+		</section>
+		<section>
+			<h2 id="sez-1">1. Obiettivo e idea dell'applicazione</h2>
+			<p class="intro">Il progetto consiste nella realizzazione di una scena 3D interattiva ispirata a un'isola del
+				celebre videogioco <i>Animal Crossing</i> di Nintendo. Il giocatore controlla un personaggio che esplora un
+				micro-mondo contenente una casa, alberi, fiori, nuvole e oggetti decorativi, osservato attraverso una visuale in
+				terza persona.</p>
+			<p>L'applicazione è stata sviluppata in WebGL nativo, JavaScript e GLSL, integrando l'interfaccia
+				<code>dat.GUI</code>
+				per il controllo dei parametri in tempo reale. La scena combina modelli OBJ, texture 2D, illuminazione per-pixel
+				(Phong/Lambert)
+				e una deformazione cilindrica del terreno per ottenere il caratteristico effetto visivo del mondo "curvo".
+			</p>
+			<p>Per rendere l'esperienza immersiva, è stata aggiunta una traccia musicale di sottofondo in ciclo continuo.
+				L'audio viene avviato al primo click o tocco dell'utente (rispettando le restrizioni di autoplay dei browser)
+				oppure direttamente tramite il controller audio dell'interfaccia.</p>
+		</section>
 
-    <section>
-      <h2>2. Scelte progettuali</h2>
-      <p>Una scelta importante e' stata mantenere, per quanto possibile, lo stile della camera tipico del gioco
-        originale a cui il progetto si ispira. Per questo motivo e' stata utilizzata una camera in terza persona che
-        segue il personaggio da dietro e dall'alto, invece di una visuale libera completamente indipendente dal
-        protagonista.</p>
-      <p>Per rispettare il requisito di interazione tramite mouse senza perdere questa impostazione, il mouse non
-        controlla una rotazione completa a 360 gradi. La posizione del cursore produce invece una rotazione limitata e
-        graduale della visuale tramite un effetto di parallasse. In questo modo l'utente puo' osservare meglio la scena
-        mantenendo il carattere e la leggibilita' della camera originale.</p>
-      <p>Anche la trasparenza degli oggetti vicini alla camera riprende una soluzione tipica del gioco di riferimento:
-        quando la camera passa davanti alla casa o agli alberi, questi diventano progressivamente trasparenti e non
-        impediscono la visuale del personaggio. L'effetto e' stato realizzato interpolando l'opacita' nel tempo, in modo
-        da evitare cambiamenti improvvisi e rendere piu' naturale l'esplorazione.</p>
-    </section>
+		<section>
+			<h2 id="sez-2">2. Scelte progettuali</h2>
+			<p>Una scelta importante è stata mantenere, per quanto possibile, lo stile della camera tipico del gioco
+				originale a cui il progetto si ispira. Per questo motivo è stata utilizzata una camera in terza persona che
+				segue il personaggio da dietro e dall'alto, invece di una visuale libera completamente indipendente dal
+				protagonista.</p>
+			<p>Per rispettare il requisito di interazione tramite mouse senza perdere questa impostazione, il mouse non
+				controlla una rotazione completa a 360 gradi. La posizione del cursore produce invece una rotazione limitata e
+				graduale della visuale tramite un effetto di parallasse. In questo modo l'utente può osservare meglio la scena
+				mantenendo il carattere e la leggibilità della camera originale.</p>
+			<p>Anche la trasparenza degli oggetti vicini alla camera riprende una soluzione tipica del gioco di riferimento:
+				quando la camera passa davanti alla casa o agli alberi, questi diventano progressivamente trasparenti e non
+				impediscono la visuale del personaggio. L'effetto è stato realizzato interpolando l'opacità nel tempo, in modo
+				da evitare cambiamenti improvvisi e rendere più naturale l'esplorazione.</p>
+		</section>
 
-    <section>
-      <h2>3. Scena e contenuti</h2>
-      <p>La scena contiene i seguenti elementi:</p>
-      <ul>
-        <li>un terreno a griglia di dimensione <code>100 x 100</code> con <code>80 x 80</code> suddivisioni, curvato nel
-          vertex shader;</li>
-        <li>una casa importata da file OBJ e suddivisa in gruppi di materiale;</li>
-        <li>un personaggio importato da file OBJ e controllabile dall'utente;</li>
-        <li>50 alberi generati in posizioni casuali e disegnati tramite instancing;</li>
-        <li>40 fiori generati in posizioni casuali, alcuni dei quali animati;</li>
-        <li>12 nuvole importate da file OBJ e animate lungo l'asse X;</li>
-        <li>una bacheca composta da fotografia, palo e quattro elementi della cornice;</li>
-        <li>una skybox cubica con gradiente tra orizzonte e zenit.</li>
-      </ul>
-      <p>Le trasformazioni dei modelli vengono costruite a partire dai loro bounding box: il modello viene centrato,
-        scalato uniformemente, ruotato e appoggiato al terreno. Questo permette di usare la stessa procedura per casa,
-        personaggio e alberi anche se i file OBJ hanno dimensioni e origini diverse.</p>
-      <h3>Asset 3D e risorse esterne</h3>
-      <p>Per la realizzazione dell'ambiente 3D sono stati utilizzati sia modelli creati su misura,
-        sia risorse esterne distribuite con licenza libera/open-source: </p>
-      <ul>
-        <li><strong>Nuvole e Fiori</strong> sono stati interamente creati e realizzati con Blender
-        </li>
-        <li><strong>Casa, Personaggio e Alberi</strong> sono modelli 3D in formato OBJ reperiti online da <a
-            href="https://sketchfab.com">sketchfab.com</a> citati nei commenti dei file OBJ e utilizzati con licenza
-          Creative Commons Attribution 4.0 International (CC BY 4.0) che riporto anche qui di seguito:</li>
-        <ul>
-          <li><strong>Casa</strong> <a
-              href="https://sketchfab.com/3d-models/animal-crossing-house-68fd7b3b59d8441e82e64960620ac0e2"
-              target="_blank">sketchfab.com realizzato da JMGameDev</a></li>
-          <li><strong>Personaggio</strong> <a
-              href="https://sketchfab.com/3d-models/animal-crossing-character-aae1f2d942fd474a99051c24dc91b2a0"
-              target="_blank">sketchfab.com realizzato da Mua</a></li>
-          <li><strong>Alberi</strong> <a
-              href="https://sketchfab.com/3d-models/animal-crossing-pine-tree-5b4c600c9b874b6a97c887ecf7529cf1"
-              target="_blank">sketchfab.com realizzato da alexandermadrews</a></li>
-        </ul>
-        </li>
-        <li><strong>Traccia audio:</strong> La traccia audio di sottofondo è tratta dal gioco originale Nintendo,
-          disponibile sul web.</li>
-        <li><strong>Texture:</strong> il prato è stato realizzato con una texture ripetuta di un'immagine trovata online
-          che replica quello del gioco originale.</li>
-      </ul>
-    </section>
+		<section>
+			<h2 id="sez-3">3. Scena e contenuti</h2>
+			<p>La scena si compone dei seguenti elementi principali:</p>
+			<ul>
+				<li><b>Terreno:</b> Griglia di dimensione <code>100 x 100</code> suddivisa in <code>80 x 80</code> celle,
+					deformata nel vertex shader;</li>
+				<li><b>Modelli OBJ:</b> Casa (con gruppi di materiali distinti), personaggio controllabile, 12 nuvole animate
+					sull'asse X e una bacheca con fotografia personale;</li>
+				<li><b>Elementi procedurali e instanziati:</b> 50 alberi distribuiti casualmente (disegnati via instancing) e 40
+					fiori (alcuni con animazione rotazionale);</li>
+				<li><b>Ambiente:</b> Skybox cubica con gradiente dinamico tra orizzonte e zenit.</li>
+			</ul>
 
-    <section>
-      <h2>4. Organizzazione del codice</h2>
-      <ul>
-        <li><code>main.js</code> orchestra caricamento delle risorse, creazione della scena, aggiornamento del gioco e
-          render loop;</li>
-        <li><code>renderer.js</code> inizializza WebGL, configura le uniform globali e gestisce le draw call;</li>
-        <li><code>shaderUtils.js</code> contiene shader, buffer, attributi, texture e instancing;</li>
-        <li><code>geometry.js</code> genera cubi, piani, dischi e la griglia del terreno;</li>
-        <li><code>objLoader.js</code> legge i file OBJ e calcola i bounding box;</li>
-        <li><code>math.js</code> contiene vettori, matrici, prospettiva, camera look-at e trasformazioni;</li>
-        <li><code>camera.js</code> implementa la camera rolling-follow con interpolazione della parallasse;</li>
-        <li><code>player.js</code> gestisce movimento, accelerazione, attrito e collisioni;</li>
-        <li><code>mobileControls.js</code>, <code>mobile-player.js</code> e <code>mobile-camera.js</code> costruiscono i
-          controlli touch per movimento e visuale;</li>
-        <li><code>gameObject.js</code> raccoglie mesh, texture, colore e matrice di un oggetto;</li>
-        <li><code>cycleDayNight.js</code> gestisce il ciclo automatico giorno/notte, interpolando i parametri di luce e
-          skybox tra i preset "Alba", "Mezzogiorno", "Tramonto" e "Notte". Ogni transizione dura 5 secondi;</li>
-        <li><code>const.js</code> raccoglie i percorsi delle risorse e i parametri della scena, della camera e del
-          rendering.</li>
-      </ul>
-      <p>Il caricamento delle risorse viene gestito in modo asincrono: file OBJ e texture vengono richiesti tramite
-        funzioni basate su <code>fetch</code> e caricamento delle immagini, mentre <code>Promise.all</code> permette di
-        attendere contemporaneamente più risorse prima di creare la scena e avviare il render loop.</p>
-    </section>
+			<h3 id="sez-3-1">Matematica delle Trasformazioni e Bounds Collisioni</h3>
+			<p>I modelli OBJ (caratterizzati da origini e scale arbitrarie) vengono omogeneizzati posizionandoli ed
+				allineandoli tramite la matrice Modellante $M$, calcolata a partire dai loro Bounding Box locali:</p>
 
-    <section>
-      <h2>5. Rendering 3D</h2>
-      <h3>Proiezione e camera</h3>
-      <p>La scena viene visualizzata con una proiezione prospettica ottenuta tramite <code>mat4Perspective</code>. La
-        modalita' usata normalmente e' <code>rolling-follow</code>: la camera segue il personaggio da dietro e
-        dall'alto, mantenendo il player al centro dell'inquadratura. Su dispositivi con mouse la visuale puo' essere
-        modificata tramite parallasse in base alla posizione del cursore; un click sul canvas abilita o disabilita
-        questo comportamento.</p>
+			<div class="formula">
+				$$M = T(\text{position}) \cdot R_y(\theta) \cdot S(\text{scale}) \cdot T_{\text{center}}(-\text{center})$$
+			</div>
 
-      <h3>Illuminazione</h3>
-      <p>Il fragment shader calcola una componente ambientale, una componente diffusa e una componente speculare. La
-        luce e' una luce direzionale il cui colore e la cui intensita' possono essere modificati dal pannello di
-        controllo. E' inoltre possibile attivare la rotazione della direzione luminosa nel tempo.</p>
+			<p>Il sistema calcola le collisioni su due livelli:</p>
+			<ul>
+				<li><code>computeBounds(positions)</code>: Calcola il Bounding Box <b>locale</b> dal file OBJ sconnesso dalle
+					trasformazioni.</li>
+				<li><code>getTransformedBoundsXZ(bounds, matrix)</code>: Moltiplica gli 8 vertici per la matrice finale $M$,
+					determinando i limiti min/max nello spazio globale <b>XZ</b> usati nell'algoritmo di collisione AABB.</li>
+			</ul>
 
-      <h3>Curvatura e skybox</h3>
-      <p>Il terreno viene generato come una griglia piana con molte suddivisioni. Il vertex shader modifica la
-        coordinata verticale in funzione della distanza lungo l'asse Z e dell'origine associata al player, producendo la
-        curvatura cilindrica senza modificare la geometria originale.</p>
-      <p>La skybox e' una seconda geometria cubica disegnata con shader dedicati. Il colore del fragment viene
-        interpolato tra un colore dell'orizzonte e un colore dello zenit.</p>
-    </section>
+			<h3 id="sez-3-2">Asset 3D e risorse esterne</h3>
+			<p>Per la realizzazione dell'ambiente 3D sono stati utilizzati sia modelli creati su misura,
+				sia risorse esterne distribuite con licenza libera/open-source: </p>
+			<ul>
+				<li><strong>Nuvole e Fiori</strong> sono stati interamente creati e realizzati con Blender
+				</li>
+				<li><strong>Casa, Personaggio e Alberi</strong> sono modelli 3D in formato OBJ reperiti online da <a
+						href="https://sketchfab.com">sketchfab.com</a> citati nei commenti dei file OBJ e utilizzati con licenza
+					Creative Commons Attribution 4.0 International (CC BY 4.0) che riporto anche qui di seguito:</li>
+				<ul>
+					<li><strong>Casa</strong> <a
+							href="https://sketchfab.com/3d-models/animal-crossing-house-68fd7b3b59d8441e82e64960620ac0e2"
+							target="_blank">sketchfab.com realizzato da JMGameDev</a></li>
+					<li><strong>Personaggio</strong> <a
+							href="https://sketchfab.com/3d-models/animal-crossing-character-aae1f2d942fd474a99051c24dc91b2a0"
+							target="_blank">sketchfab.com realizzato da Mua</a></li>
+					<li><strong>Alberi</strong> <a
+							href="https://sketchfab.com/3d-models/animal-crossing-pine-tree-5b4c600c9b874b6a97c887ecf7529cf1"
+							target="_blank">sketchfab.com realizzato da alexandermadrews</a></li>
+				</ul>
+				</li>
+				<li><strong>Traccia audio:</strong> La traccia audio di sottofondo è tratta dal gioco originale Nintendo,
+					disponibile sul web.</li>
+				<li><strong>Texture:</strong> il prato è stato realizzato con una texture ripetuta di un'immagine trovata online
+					che replica quello del gioco originale.</li>
+			</ul>
+		</section>
 
-    <section>
-      <h2>6. Texture e materiali</h2>
-      <p>Il progetto applica texture a piu' oggetti della scena:</p>
-      <ul>
-        <li>la casa usa texture separate per muri/tetto e porta/finestre;</li>
-        <li>il personaggio usa la texture del modello;</li>
-        <li>gli alberi usano una texture con parti trasparenti;</li>
-        <li>il terreno usa <code>textures/grass.png</code>;</li>
-        <li>la bacheca usa la fotografia personale <code>textures/mia-foto.jpg</code>.</li>
-      </ul>
-      <p>Il caricamento riconosce texture power-of-two e configura mipmap e wrapping quando possibile. Per texture non
-        power-of-two vengono usati <code>CLAMP_TO_EDGE</code> e filtraggio lineare.</p>
-    </section>
+		<section>
+			<h2 id="sez-4">4. Organizzazione del codice</h2>
+			<p>La logica dell'applicazione è suddivisa nei seguenti moduli JavaScript:</p>
+			<ul>
+				<li><code>main.js</code>: punto d'ingresso, orchestrazione del caricamento delle risorse e avvio del loop di
+					gioco;</li>
+				<li><code>renderer.js</code>: gestione del contesto WebGL, stato grafico, uniform globali e draw call;</li>
+				<li><code>shader.js</code>: gestione dei programmi shader, buffer, attributi, texture e supporto all'instancing;
+				</li>
+				<li><code>geometry.js</code>: generazione delle geometrie procedurali (piani, cubi, griglie);</li>
+				<li><code>objLoader.js</code>: parsing asincrono dei file OBJ e calcolo dei limiti geometrici;</li>
+				<li><code>math.js</code>: libreria matematica personalizzata (vettori, matrici, proiezioni, look-at);</li>
+				<li><code>camera.js</code>: logica della camera in terza persona e gestione della parallasse;</li>
+				<li><code>player.js</code> e <code>mobile-player.js</code>: gestione del movimento, accelerazione, attrito e
+					collisioni;</li>
+				<li><code>mobileControls.js</code> e <code>mobile-camera.js</code>: costruzione ed elaborazione dei controlli
+					touch;</li>
+				<li><code>gameObject.js</code>: classi orientate agli oggetti (<code>GameObject</code>,
+					<code>CloudObject</code>, <code>FlowerObject</code>);
+				</li>
+				<li><code>cycleDayNight.js</code>: gestione del ciclo orario e interpolazione dei parametri di illuminazione;
+				</li>
+				<li><code>const.js</code>: parametri di configurazione globali, percorsi degli asset e costanti di gioco.</li>
+			</ul>
+		</section>
 
-    <section>
-      <h2>7. Movimento, collisioni e HUD</h2>
-      <p>Il personaggio usa i tasti WASD e si muove relativamente alla direzione della camera. Il movimento non e'
-        istantaneo: il controller applica accelerazione, velocita' massima e attrito. La rotazione del personaggio segue
-        la direzione della velocita'. Su dispositivi touch, un D-pad virtuale fornisce le stesse quattro direzioni e un
-        secondo pad circolare controlla la visuale.</p>
-      <p>Le collisioni sono risolte in piano XZ tramite:</p>
-      <ul>
-        <li>cilindri per gli alberi;</li>
-        <li>AABB per la casa;</li>
-        <li>limiti rettangolari;</li>
-        <li>un limite circolare per mantenere il player nel mondo.</li>
-      </ul>
-      <p>L'interfaccia comprende il titolo del progetto, il collegamento alla relazione, l'indicazione dei controlli e
-        una rappresentazione grafica dei tasti WASD, che si illumina durante la pressione. Su dispositivi touch vengono
-        aggiunti automaticamente i controlli virtuali per movimento e visuale.</p>
-    </section>
+		<section>
+			<h2 id="sez-5">5. Architettura e Workflow del Progetto</h2>
+			<p>L'esecuzione dell'applicazione segue una pipeline ben definita:</p>
+			<ol>
+				<li><b>Inizializzazione del Contesto:</b> <code>main.js</code> crea il canvas e invoca <code>renderer.js</code>
+					per configurare il contesto WebGL, abilitare le estensioni a 32-bit (<code>OES_element_index_uint</code>),
+					compilare gli shader e attivare Depth Test ed Alpha Blending.</li>
+				<li><b>Caricamento Asincrono delle Risorse:</b> Tramite <code>Promise.all</code> e funzioni di
+					<code>fetch</code>, vengono scaricati ed elaborati in parallelo sia i file OBJ (calcolando vertici, UV e
+					normali) sia le immagini di texture.
+				</li>
+				<li><b>Istanziazione degli Oggetti:</b> Gli elementi grafici vengono incapsulati in classi derivate da
+					<code>GameObject</code>. Per i 50 alberi viene configurato l'<b>Instanced Rendering</b>
+					(<code>drawMeshInstanced</code>), memorizzando le matrici di trasformazione in buffer dedicati per ridurre le
+					draw call.
+				</li>
+				<li><b>Render Loop:</b> Ad ogni frame (via <code>requestAnimationFrame</code>) vengono eseguiti sequenzialmente
+					l'aggiornamento dell'input, la fisica del giocatore, le collisioni, l'aggiornamento delle nuvole e dei fiori,
+					l'interpolazione giorno/notte e il rendering delle geometrie.</li>
+			</ol>
+		</section>
 
-    <section>
-      <h2>8. Animazione e tecniche avanzate</h2>
-      <p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati
-        movimento, collisioni, camera, nuvole, fiori, dissolvenza degli alberi e della casa, illuminazione e render.</p>
-      <p>La luce puo' ruotare attorno alla scena. Inoltre gli alberi e la casa vicini alla camera vengono resi
-        progressivamente trasparenti tramite interpolazione dell'opacita'. Per le istanze trasparenti il renderer
-        disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment
-        shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
-      <p>Le nuvole si muovono orizzontalmente e vengono riposizionate sul lato opposto quando superano il bordo
-        dell'area di gioco. Una parte dei fiori ruota continuamente attorno all'asse Y, con velocita' e direzione
-        variabili.</p>
-      <p>Il pannello <code>dat.GUI</code> permette di selezionare manualmente Alba, Mezzogiorno, Tramonto o Notte,
-        oppure di attivare il ciclo automatico giorno/notte. I preset modificano colore e intensita' della luce e i
-        colori del gradiente della skybox; nel ciclo automatico questi valori vengono interpolati gradualmente tra una
-        fase e la successiva. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
-    </section>
+		<section>
+			<h2 id="sez-6">6. Tecniche di Rendering e Shader</h2>
 
-    <section>
-      <h2>9. Controlli</h2>
-      <ul>
-        <li><strong>WASD:</strong> movimento del personaggio;</li>
-        <li><strong>mouse:</strong> spostamento del cursore per la parallasse della visuale; il click sul canvas abilita
-          o disabilita l'effetto;</li>
-        <li><strong>touch:</strong> D-pad virtuale per il movimento e pad circolare per la visuale;</li>
-        <li><strong>dat.GUI:</strong> luce orbitante, colore e intensita' della luce, selezione dei preset della
-          giornata, ciclo automatico giorno/notte e fog;</li>
-        <li><strong>interfaccia:</strong> il collegamento alla relazione e la rappresentazione dei tasti sono
-          disponibili nella schermata iniziale.</li>
-        <li><strong>musica:</strong> la musica viene avviata automaticamente quando possibile e, in caso di blocco
-          dell'autoplay da parte del browser, parte al primo click o tocco dell'utente; il controller audio permette
-          inoltre di avviarla, interromperla e regolarne il volume.</li>
-      </ul>
-      <div class="note">Su dispositivi mobili i controlli touch vengono visualizzati automaticamente e permettono di
-        sostituire sia la tastiera sia il mouse.</div>
-    </section>
+			<h3 id="sez-6-1">Curvatura del terreno e Skybox</h3>
+			<p>Il fattore di curvatura del mondo viene applicato all'interno del Vertex Shader, che modifica la coordinata $Y$
+				della griglia del terreno in funzione della distanza $Z$ dall'osservatore ($z_0$):</p>
+			<div class="formula">
+				$$y' = y - (z - z_0)^2 \cdot k$$
+			</div>
+			<p>dove $k$ rappresenta l'intensità della curvatura (<code>curvatureStrength</code>). La Skybox viene renderizzata
+				con uno shader dedicato che calcola un gradiente sfumato tra orizzonte e zenit.</p>
 
-    <section>
-      <h2>10. Avvio dell'applicazione</h2>
-      <p>L'applicazione deve essere servita tramite un server HTTP locale per permettere il caricamento degli OBJ e
-        delle texture. Dalla cartella <code>progetto</code> e' possibile usare, ad esempio:</p>
-      <p><code>python -m http.server</code></p>
-      <p>Successivamente si apre <code>http://localhost:8000/main.html</code> nel browser (è consigliato Chrome per una
-        migliore esperienza)</p>
-    </section>
-  </main>
+			<h3 id="sez-6-2">Proiezione, Camera e Trasparenze</h3>
+			<p>La visuale utilizza una matrice di proiezione prospettica (<code>mat4Perspective</code>). Il sistema di
+				trasparenza dinamica gestisce l'opacità degli ostacoli vicini alla camera (sotto la soglia
+				<code>TREES.fadeRadius</code>). Per garantire un corretto rendering degli elementi trasparenti senza artefatti
+				visivi, la pipeline opera in due passaggi:
+			</p>
+			<ol>
+				<li>Disegna le geometrie opache con scrittura sul Depth Buffer attiva (<code>gl.depthMask(true)</code>).</li>
+				<li>Disabilita la scrittura della profondità (<code>gl.depthMask(false)</code>), attiva l'Alpha Blending
+					(<code>SRC_ALPHA</code>, <code>ONE_MINUS_SRC_ALPHA</code>) e disegna gli oggetti trasparenti ordinati.</li>
+			</ol>
 
-  <footer>Alice Benatti - Relazione del progetto di Computer Graphics - a.a. 2025/2026</footer>
+			<h3 id="sez-6-3">Illuminazione Phong/Lambertian</h3>
+			<p>Il Fragment Shader calcola l'illuminazione per-pixel basandosi su tre componenti:</p>
+			<ul>
+				<li><b>Ambientale:</b> luce di base uniforme per garantire visibilità nelle zone d'ombra.</li>
+				<li><b>Diffusa (Lambert):</b> dipendente dall'angolo tra la normale della superficie $\vec{N}$ e il vettore luce
+					$\vec{L}$ ($\max(\vec{N} \cdot \vec{L}, 0)$).</li>
+				<li><b>Speculare:</b> riflesso lucido calibrato sulla posizione dell'osservatore.</li>
+			</ul>
+			<p>Il modulo <code>cycleDayNight.js</code> interpola linearmente colore della luce, intensità e gradiente dello
+				skybox tra quattro preset (Alba, Mezzogiorno, Tramonto, Notte) lungo una durata configurabile (5 secondi per
+				transizione).</p>
+
+		</section>
+
+		<section>
+			<h2 id="sez-7">7. Texture e Materiali</h2>
+			<p>La gestione delle texture nel modulo <code>shader.js</code> varia in base alla risoluzione delle immagini:</p>
+			<ul>
+				<li><b>Power-of-Two (PoT):</b> utilizzate dove possibile, abilitano la generazione automatica delle Mipmap e
+					modalità di wrapping ripetute (usate per il prato <code>grass.png</code>).</li>
+				<li><b>Non-Power-of-Two (NPoT):</b> gestite impostando il filtraggio su <code>GL_LINEAR</code> e il clamp sui
+					bordi (<code>CLAMP_TO_EDGE</code>), evitando problemi di compatibilità WebGL.</li>
+			</ul>
+			<p>Il fragment shader supporta inoltre l'<b>alpha cutout</b> (discard dei fragment con opacità inferiore a una
+				soglia), fondamentale per renderizzare la chioma degli alberi ed eliminare le porzioni trasparenti del fogliame.
+			</p>
+		</section>
+
+		<section>
+			<h2 id="sez-8">8. Fisica, Collisioni e Input Utente</h2>
+			<p>Il movimento del personaggio è basato su un modello fisico con accelerazione, velocità massima ed attrito
+				graduale. L'orientamento del modello si adatta automaticamente alla direzione del vettore velocità.</p>
+			<p>Le collisioni nello spazio bidimensionale XZ combinano due strategie:</p>
+			<ul>
+				<li><b>AABB (Axis-Aligned Bounding Box):</b> per la casa e i confini rettangolari del mondo.</li>
+				<li><b>Cilindri di collisione:</b> per fusti degli alberi, fiori e l'area circolare calpestabile dell'isola.
+				</li>
+			</ul>
+		</section>
+
+		<section>
+			<h2 id="sez-9">9. Animazione e tecniche avanzate</h2>
+			<p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati
+				movimento, collisioni, camera, nuvole, fiori, dissolvenza degli alberi e della casa, illuminazione e render.</p>
+			<p>La luce può ruotare attorno alla scena. Inoltre gli alberi e la casa vicini alla camera vengono resi
+				progressivamente trasparenti tramite interpolazione dell'opacità. Per le istanze trasparenti il renderer
+				disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment
+				shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
+			<p>Le nuvole si muovono orizzontalmente e vengono riposizionate sul lato opposto quando superano il bordo
+				dell'area di gioco. Una parte dei fiori ruota continuamente attorno all'asse Y, con velocità e direzione
+				variabili.</p>
+			<p>Il pannello <code>dat.GUI</code> permette di selezionare manualmente Alba, Mezzogiorno, Tramonto o Notte,
+				oppure di attivare il ciclo automatico giorno/notte. I preset modificano colore e intensità della luce e i
+				colori del gradiente della skybox; nel ciclo automatico questi valori vengono interpolati gradualmente tra una
+				fase e la successiva. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
+		</section>
+
+		<section>
+			<h2 id="sez-10">10. Controlli e interfaccia</h2>
+			<ul>
+				<li><b>Movimento:</b> Tasti <code>WASD</code> (con riscontro visivo sull'interfaccia a schermo) oppure D-pad
+					virtuale su dispositivi touch.</li>
+				<li><b>Telecamera:</b> Movimento del mouse o pad circolare touch per regolare la parallasse della visuale. Un
+					click sul canvas blocca/sblocca l'effetto.</li>
+				<li><b>Pannello dat.GUI:</b> Permette di selezionare direttamente i preset orari, attivare la rotazione
+					automatica del sole, regolare i parametri del Fog e modificare i parametri di resa grafica.</li>
+				<li><b>Audio:</b> Controller dedicato nell'interfaccia per gestire riproduzione, pausa e regolazione del volume
+					della traccia musicale.</li>
+			</ul>
+			<div class="note">Su dispositivi mobile, l'interfaccia si adatta automaticamente mostrando i controlli touch
+				integrati.</div>
+		</section>
+
+		<section>
+			<h2 id="sez-11">11. Avvio dell'applicazione</h2>
+			<p>A causa delle restrizioni di sicurezza del browser (CORS) sull'accesso ai file locali tramite protocollo
+				<code>file://</code>, l'applicazione deve essere servita tramite un server HTTP locale.
+			</p>
+			<p>Dalla radice del progetto, è possibile avviare un server locale tramite Python:</p>
+			<p><code>python -m http.server 8000</code></p>
+			<p>Successivamente, aprire il browser (consigliato Google Chrome) all'indirizzo:
+				<code>http://localhost:8000/main.html</code>.
+			</p>
+		</section>
+	</main>
+
+	<footer>Alice Benatti - Relazione del progetto di Computer Graphics - a.a. 2025/2026</footer>
 </body>
 
 </html>

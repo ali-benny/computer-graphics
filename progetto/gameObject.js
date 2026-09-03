@@ -1,80 +1,119 @@
-import { createMesh, setMeshAttributes, drawMesh } from "./shaderUtils.js";
-import { mat4Identity, mat4Translate, mat4Scale, mat4RotateY, mat4Multiply } from "./math.js";
+import { mat4Identity, mat4Translate, mat4Scale, mat4RotateY, mat4Multiply } from './math.js';
 
 export class GameObject {
-  constructor(options = {}) {
-    // options: { gl, mesh, geometry, color, texture, invertUVY, position, rotationY, scale }
-    this.gl = options.gl || null;
-    this.mesh = options.mesh || null;
-    if (!this.mesh && options.geometry && this.gl) {
-      this.mesh = createMesh(this.gl, options.geometry);
-    }
+	constructor(options = {}) {
+		this.gl = options.gl || null;
+		this.mesh = options.mesh || null;
+		this.texture = options.texture || null;
+		this.color = options.color || [1.0, 1.0, 1.0];
+		this.opacity = options.opacity ?? 1.0;
+		this.type = options.type || 'object';
 
-    this.color = options.color || [1.0, 1.0, 1.0];
-    this.texture = options.texture || null;
+		// Gestione bounds & centramento OBJ
+		this.bounds = options.bounds || null;
+		this.placeOnGround = options.placeOnGround ?? false;
+		this.ySinkMul = options.ySinkMul ?? 0;
 
-    this.position = options.position ? [...options.position] : [0, 0, 0];
-    this.rotationY = options.rotationY || 0; // radians
-    this.scale = options.scale ? [...options.scale] : [1, 1, 1];
+		// Trasformazioni locali
+		this.position = options.position ? [...options.position] : [0, 0, 0];
+		this.rotationY = options.rotationY || 0;
+		this.scaleMul = options.scaleMul ?? 1;
 
-    this.modelMatrix = mat4Identity();
-    this.updateModelMatrix();
-  }
+		this.modelMatrix = mat4Identity();
+		this.updateModelMatrix();
+	}
 
-  setPosition(x, y, z) {
-    this.position = [x, y, z];
-    this.updateModelMatrix();
-  }
+	// Ricalcola la matrice usando sia la posizione che i bounds del modello
+	updateModelMatrix() {
+		if (!this.bounds) {
+			// Fallback standard T * R * S se non ci sono bounds
+			const t = mat4Translate(this.position[0], this.position[1], this.position[2]);
+			const r = mat4RotateY(this.rotationY);
+			const s = mat4Scale(this.scaleMul, this.scaleMul, this.scaleMul);
+			this.modelMatrix = mat4Multiply(t, mat4Multiply(r, s));
+			return;
+		}
 
-  setRotationY(rad) {
-    this.rotationY = rad;
-    this.updateModelMatrix();
-  }
+		// Algoritmo avanzato con bounds (ex buildModelMatrix)
+		const scale = this.bounds.uniformScale * this.scaleMul;
+		const minRelY = this.bounds.min[1] - this.bounds.center[1];
+		const placeOnGroundY = this.placeOnGround ? -minRelY * scale : 0;
+		const extra = this.ySinkMul ? this.ySinkMul * scale : 0;
+		const finalTranslate = [
+			this.position[0],
+			this.position[1] + placeOnGroundY - extra,
+			this.position[2]
+		];
 
-  setScale(sx, sy, sz) {
-    this.scale = [sx, sy, sz];
-    this.updateModelMatrix();
-  }
+		this.modelMatrix = mat4Multiply(
+			mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]),
+			mat4Multiply(
+				mat4RotateY(this.rotationY),
+				mat4Multiply(
+					mat4Scale(scale, scale, scale),
+					mat4Translate(
+						-this.bounds.center[0],
+						-this.bounds.center[1],
+						-this.bounds.center[2]
+					)
+				)
+			)
+		);
+	}
 
-  updateModelMatrix() {
-    const t = mat4Translate(this.position[0], this.position[1], this.position[2]);
-    const r = mat4RotateY(this.rotationY);
-    const s = mat4Scale(this.scale[0], this.scale[1], this.scale[2]);
-    // model = translate * rotateY * scale
-    this.modelMatrix = mat4Multiply(t, mat4Multiply(r, s));
-  }
+	// Metodi helper trasparenti che aggiornano anche la matrice
+	setPosition(x, y, z) {
+		this.position = [x, y, z];
+		this.updateModelMatrix();
+	}
 
-  setModelMatrix(matrix) {
-    this.modelMatrix = matrix;
-  }
+	setRotationY(rad) {
+		this.rotationY = rad;
+		this.updateModelMatrix();
+	}
 
-  render(gl, program) {
-    if (!this.mesh) {
-      console.warn("GameObject.render: no mesh available");
-      return;
-    }
-
-    // Upload model matrix
-    const uModelLoc = gl.getUniformLocation(program, "uModelMatrix");
-    if (uModelLoc) gl.uniformMatrix4fv(uModelLoc, false, new Float32Array(this.modelMatrix));
-
-    // Upload material / texture flags
-    const uBaseColor = gl.getUniformLocation(program, "uBaseColor");
-    if (uBaseColor) gl.uniform3f(uBaseColor, this.color[0], this.color[1], this.color[2]);
-
-    const uUseTexture = gl.getUniformLocation(program, "uUseTexture");
-    if (uUseTexture) gl.uniform1i(uUseTexture, this.texture ? 1 : 0);
-
-    if (this.texture) {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, this.texture);
-      const uTexture = gl.getUniformLocation(program, "uTexture");
-      if (uTexture) gl.uniform1i(uTexture, 0);
-    }
-
-    setMeshAttributes(gl, program, this.mesh);
-    drawMesh(gl, this.mesh);
-  }
+	setScaleMul(s) {
+		this.scaleMul = s;
+		this.updateModelMatrix();
+	}
 }
 
 export default GameObject;
+
+////// classi estensive //////
+
+export class CloudObject extends GameObject {
+  constructor(options) {
+    super({ ...options, type: 'cloud' });
+    this.velocityX = options.velocityX || 0;
+    this.areaX = options.areaX || 50;
+    this.wrapMargin = options.wrapMargin || 10;
+  }
+
+  update(deltaTime) {
+    this.position[0] += this.velocityX * deltaTime;
+
+    // Wrap ai bordi dello schermo
+    if (this.position[0] > this.areaX + this.wrapMargin) {
+      this.position[0] = -this.areaX - this.wrapMargin;
+    } else if (this.position[0] < -this.areaX - this.wrapMargin) {
+      this.position[0] = this.areaX + this.wrapMargin;
+    }
+
+    this.updateModelMatrix();
+  }
+}
+
+export class FlowerObject extends GameObject {
+  constructor(options) {
+    super({ ...options, type: 'flower', placeOnGround: true });
+    this.rotationSpeed = options.rotationSpeed || 0;
+  }
+
+  update(deltaTime) {
+    if (this.rotationSpeed !== 0) {
+      this.rotationY += this.rotationSpeed * deltaTime;
+      this.updateModelMatrix();
+    }
+  }
+}

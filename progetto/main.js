@@ -1,13 +1,13 @@
 import { createCube, createCylinder } from './geometry.js';
 import { loadOBJ, computeBounds } from './objLoader.js';
-import { createMesh, loadTexture } from './shaderUtils.js';
+import { createMesh, loadTexture } from './shader.js';
 import { createCanvas, Renderer } from './renderer.js';
 import { Camera } from './camera.js';
 import { PlayerController } from './player.js';
 import { createControlPanel } from './panel.js';
 import { dayNightCycleUpdate } from './cycleDayNight.js';
 import { mat4Identity, mat4Translate, mat4Scale, mat4Multiply, mat4RotateY } from './math.js';
-import GameObject from './gameObject.js';
+import { GameObject, CloudObject, FlowerObject } from './gameObject.js';
 import {
 	CAMERA,
 	CLOUDS,
@@ -46,31 +46,6 @@ function composeSignPart(baseMatrix, localX, localY, localZ, scaleX, scaleY, sca
 	return mat4Multiply(
 		baseMatrix,
 		mat4Multiply(mat4Translate(localX, localY, localZ), mat4Scale(scaleX, scaleY, scaleZ))
-	);
-}
-
-/**
- * Return una matrice di trasformazione 4x4 per posizionare un oggetto nello spazio 3D
- * convertendo le sue coordinate locali in coordinate globali.
- */
-function buildModelMatrix(bounds, options = {}) {
-	const scale = bounds.uniformScale * (options.scaleMul ?? 1);
-	const translate = options.translate ?? [0, 0, 0];
-	const rotateY = options.rotateY ?? 0;
-	const minRelY = bounds.min[1] - bounds.center[1];
-	const placeOnGroundY = options.placeOnGround ? -minRelY * scale : 0;
-	const extra = options.ySinkMul ? options.ySinkMul * scale : 0; // affonda l'oggetto nel terreno
-	const finalTranslate = [translate[0], translate[1] + placeOnGroundY - extra, translate[2]];
-
-	return mat4Multiply(
-		mat4Translate(finalTranslate[0], finalTranslate[1], finalTranslate[2]), // posizionamento nel punto desiderato
-		mat4Multiply(
-			mat4RotateY(rotateY),
-			mat4Multiply(
-				mat4Scale(scale, scale, scale), // scalatura uniforme al contesto
-				mat4Translate(-bounds.center[0], -bounds.center[1], -bounds.center[2]) // centramento su [0,0,0]
-			)
-		)
 	);
 }
 
@@ -167,46 +142,82 @@ async function main() {
 	const signPostMesh = createMesh(gl, createCube(1));
 	const skyboxMesh = createMesh(gl, createCube(RENDERING.skyboxSize));
 
-	const houseMatrix = buildModelMatrix(houseBounds, {
+	const objects = [];
+
+	// --- TERRENO ---
+	objects.push(
+		new GameObject({
+			mesh: groundMesh,
+			texture: grassTexture,
+			type: 'ground'
+		})
+	);
+
+	// --- CASA ---
+	const houseObjects = [];
+	const addHousePart = (mesh, texture) => {
+		if (!mesh) return;
+		const houseGO = new GameObject({
+			gl,
+			mesh,
+			texture,
+			bounds: houseBounds,
 		scaleMul: 2,
 		placeOnGround: true,
-		rotateY: -Math.PI / 2,
-		translate: [0, 0, 0]
-	});
-	const houseBoundsXZ = getTransformedBoundsXZ(houseBounds, houseMatrix);
-	const houseCollider = { type: 'aabb', name: 'house', ...houseBoundsXZ };
+			rotationY: -Math.PI / 2,
+			position: [0, 0, 0],
+			type: 'house'
+		});
+		houseObjects.push(houseGO);
+		objects.push(houseGO);
+	};
+	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
+	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
 
-	// Nuvolette
+	const houseColliderMatrix = houseObjects[0] ? houseObjects[0].modelMatrix : mat4Identity();
+	const houseCollider = { type: 'aabb', name: 'house', ...getTransformedBoundsXZ(houseBounds, houseColliderMatrix) };
+
+	// --- PLAYER ---
+	const playerGO = new GameObject({
+		gl,
+		mesh: char.mesh,
+		texture: char.texture,
+		bounds: char.bounds,
+		scaleMul: 0.72,
+		placeOnGround: true,
+		type: 'player'
+	});
+	objects.push(playerGO);
+
+	// --- NUVOLETTE ---
 	const cloudObjects = [];
 
 	for (let i = 0; i < CLOUDS.count; i++) {
-		const cloudScale = CLOUDS.minScale + Math.random() * CLOUDS.scaleRange;
-
-		const cloudPosition = [
+		const scale = CLOUDS.minScale + Math.random() * CLOUDS.scaleRange;
+		const position = [
 			-CLOUDS.areaX + Math.random() * CLOUDS.areaX * 2,
 			CLOUDS.minHeight + Math.random() * CLOUDS.heightRange,
 			-CLOUDS.areaZ + Math.random() * CLOUDS.areaZ * 2
 		];
-		const cloudVelocityX = CLOUDS.minVelocityX + Math.random() * CLOUDS.velocityRangeX;
+		const velocityX = CLOUDS.minVelocityX + Math.random() * CLOUDS.velocityRangeX;
 
-		cloudObjects.push({
+		const cloudGO = new CloudObject({
 			mesh: cloud.mesh,
-			position: cloudPosition,
-			scale: cloudScale,
-			velocityX: cloudVelocityX,
+			bounds: cloud.bounds,
+			scaleMul: scale,
+			position,
+			velocityX,
 			rotationY: CLOUDS.rotationY,
-			modelMatrix: buildModelMatrix(cloud.bounds, {
-				scaleMul: cloudScale,
-				translate: cloudPosition,
-				rotateY: CLOUDS.rotationY
-			}),
-			color: [1.0, 1.0, 1.0],
 			opacity: CLOUDS.opacity,
-			type: 'cloud'
+			areaX: CLOUDS.areaX,
+			wrapMargin: CLOUDS.wrapMargin
 		});
+
+		cloudObjects.push(cloudGO);
+		objects.push(cloudGO);
 	}
 
-	// Costruzione Bacheca Foto con loop per evitare ridondanze
+	// --- BACHECA FOTO ---
 	const signBaseMatrix = mat4Multiply(mat4Translate(4.1, 0.0, -2.0), mat4RotateY(-0.3));
 	const photoBoardMatrix = composeSignPart(signBaseMatrix, 0, 2.1, 0.07, 1.0, 1.0, 1.0);
 	const photoPostMatrix = composeSignPart(signBaseMatrix, 0, 1.05, -0.04, 0.16, 2.1, 0.16);
@@ -216,87 +227,25 @@ async function main() {
 		hw = 0.6,
 		hh = 0.8;
 	const frameParts = [
-		{
-			x: 0,
-			y: 2.1 + hh + frameThickness * 0.5,
-			z: 0,
-			sx: 1.2 + frameThickness * 2,
-			sy: frameThickness,
-			sz: frameDepth
-		},
-		{
-			x: 0,
-			y: 2.1 - hh - frameThickness * 0.5,
-			z: 0,
-			sx: 1.2 + frameThickness * 2,
-			sy: frameThickness,
-			sz: frameDepth
-		},
-		{
-			x: -(hw + frameThickness * 0.5),
-			y: 2.1,
-			z: 0,
-			sx: frameThickness,
-			sy: 1.6,
-			sz: frameDepth
-		},
-		{
-			x: hw + frameThickness * 0.5,
-			y: 2.1,
-			z: 0,
-			sx: frameThickness,
-			sy: 1.6,
-			sz: frameDepth
-		}
+		{ x: 0, y: 2.1 + hh + frameThickness * 0.5, z: 0, sx: 1.2 + frameThickness * 2, sy: frameThickness, sz: frameDepth },
+		{ x: 0, y: 2.1 - hh - frameThickness * 0.5, z: 0, sx: 1.2 + frameThickness * 2, sy: frameThickness, sz: frameDepth },
+		{ x: -(hw + frameThickness * 0.5), y: 2.1, z: 0, sx: frameThickness, sy: 1.6, sz: frameDepth },
+		{ x: hw + frameThickness * 0.5, y: 2.1, z: 0, sx: frameThickness, sy: 1.6, sz: frameDepth }
 	].map((p) => composeSignPart(signBaseMatrix, p.x, p.y, p.z, p.sx, p.sy, p.sz));
 
-	const objects = [
-		{
-			mesh: groundMesh,
-			modelMatrix: mat4Identity(),
-			color: [1, 1, 1],
-			texture: grassTexture,
-			invertUVY: true,
-			type: 'ground'
-		},
-		...cloudObjects,
-		{
-			mesh: photoBoardMesh,
-			modelMatrix: photoBoardMatrix,
-			color: [1, 1, 1],
-			texture: photoTexture,
-			invertUVY: false,
-			type: 'photo'
-		},
-		{
-			mesh: signPostMesh,
-			modelMatrix: photoPostMatrix,
-			color: [0.57, 0.37, 0.15],
-			type: 'photo'
-		},
-		...frameParts.map((m) => ({ mesh: signPostMesh, modelMatrix: m, color: [0.71, 0.5, 0.22] }))
-	];
-	const houseObjects = [];
+	objects.push(
+		new GameObject({ mesh: photoBoardMesh, texture: photoTexture, type: 'photo' }),
+		new GameObject({ mesh: signPostMesh, color: [0.57, 0.37, 0.15], type: 'photo' }),
+		...frameParts.map((m) => new GameObject({ mesh: signPostMesh, color: [0.71, 0.5, 0.22] }))
+	);
+	// Assegnazione matrici composte per la bacheca
+	objects[objects.length - 2 - frameParts.length].modelMatrix = photoBoardMatrix;
+	objects[objects.length - 1 - frameParts.length].modelMatrix = photoPostMatrix;
+	frameParts.forEach((m, idx) => {
+		objects[objects.length - frameParts.length + idx].modelMatrix = m;
+	});
 
-	const addHousePart = (mesh, texture) => {
-		if (!mesh) return;
-		const go = new GameObject({
-			gl,
-			mesh,
-			texture,
-			color: [1.0, 1.0, 1.0],
-			invertUVY: true,
-			type: 'house'
-		});
-		go.modelMatrix = houseMatrix;
-		go.opacity = 1.0;
-		houseObjects.push(go);
-		objects.splice(1, 0, go);
-	};
-	addHousePart(houseMaterialMeshes.Walls_Roof, houseWallsTexture);
-	addHousePart(houseMaterialMeshes.Door_windows, houseDoorTexture);
-
-	// Generazione Alberi
+	// --- ALBERI  ---
 	const treeMatrices = new Float32Array(TREES.count * 16);
 	const treeOpacities = new Float32Array(TREES.count);
 	const treeColliders = [];
@@ -309,28 +258,29 @@ async function main() {
 		const scaleMul = TREES.minScale + Math.random() * TREES.scaleRange;
 		const rot = Math.random() * Math.PI * 2;
 
-		const m = buildModelMatrix(tree.bounds, {
+		const tempTreeGO = new GameObject({
+			bounds: tree.bounds,
 			scaleMul,
 			placeOnGround: true,
 			ySinkMul: 0.04,
-			translate: [x, 0, z],
-			rotateY: rot
+			position: [x, 0, z],
+			rotationY: rot
 		});
 
 		treeOpacities[i] = 1.0;
-		for (let k = 0; k < 16; k++) treeMatrices[i * 16 + k] = m[k];
+		for (let k = 0; k < 16; k++) treeMatrices[i * 16 + k] = tempTreeGO.modelMatrix[k];
 
 		treeColliders.push({
 			type: 'cylinder',
 			name: `tree_inst_${i}`,
-			center: [m[12], m[13], m[14]],
+			center: [x, 0, z],
 			radius: 0.6 * scaleMul
 		});
 	}
 
-	// Generazione Fiori
+	// --- FIORI ---
 	const flowerColliders = [];
-	const animatedFlowers = [];
+	const flowerObjects = [];
 
 	for (let i = 0; i < FLOWERS.count; i++) {
 		const angle = Math.random() * Math.PI * 2;
@@ -340,39 +290,22 @@ async function main() {
 		const scale = FLOWERS.minScale + Math.random() * FLOWERS.scaleRange;
 		const rot = Math.random() * FLOWERS.rotationY;
 
-		const flowerGO = new GameObject({
+		const isAnimated = i % 2 === 0;
+		const direction = i % 4 === 0 ? 1 : -1;
+		const rotationSpeed = isAnimated ? (0.5 + Math.random() * 1.0) * direction : 0;
+
+		const flowerGO = new FlowerObject({
 			gl,
 			mesh: flower.mesh,
 			texture: flower.texture,
-			color: [1.0, 1.0, 1.0],
-			invertUVY: true,
-			type: 'flower'
+			bounds: flower.bounds,
+			scaleMul: scale,
+			position: [x, 0, z],
+			rotationY: rot,
+			rotationSpeed
 		});
 
-		// Salviamo parametri utili per la rotazione
-		flowerGO.scale = scale;
-		flowerGO.position = [x, 0, z];
-		flowerGO.rotationY = rot;
-
-		// Animiamo solo la metà dei fiori
-		if (i % 2 === 0) {
-			// Direzione: 1 = orario, -1 = antiorario (alternato in base all'indice o casuale)
-			const direction = i % 4 === 0 ? 1 : -1;
-			const speed = 0.5 + Math.random() * 1.0;
-
-			flowerGO.rotationSpeed = speed * direction;
-			animatedFlowers.push(flowerGO);
-		}
-
-		flowerGO.setModelMatrix(
-			buildModelMatrix(flower.bounds, {
-				scaleMul: scale,
-				placeOnGround: true,
-				translate: [x, 0, z],
-				rotateY: rot
-			})
-		);
-
+		flowerObjects.push(flowerGO);
 		objects.push(flowerGO);
 
 		flowerColliders.push({
@@ -409,22 +342,10 @@ async function main() {
 	camera.mouseSmoothing = CAMERA.mouseSmoothing;
 
 	const hud = createControlPanel(state, canvas, camera);
-
-	const playerGO = new GameObject({
-		gl,
-		mesh: char.mesh,
-		texture: char.texture,
-		color: [1.0, 1.0, 1.0],
-		invertUVY: true
-	});
-	objects.splice(1, 0, playerGO);
-
-	// ====== pre-allocazioni animate() ======
-	let lastTime = performance.now(),
-		lightAngle = 0;
-
 	const colliders = [...STATIC_COLLIDERS, houseCollider, ...treeColliders, ...flowerColliders];
 
+	let lastTime = performance.now();
+	let lightAngle = 0;
 	let cameraForward = [0, 0, 0];
 	let cameraRight = [0, 0, 0];
 	let finalLightColor = [0, 0, 0];
@@ -433,22 +354,14 @@ async function main() {
 		const deltaTime = Math.min(0.05, (nowMs - lastTime) * 0.001);
 		lastTime = nowMs;
 
-		// Movimento Nuvolette
-		for (const cloudObject of cloudObjects) {
-			cloudObject.position[0] += cloudObject.velocityX * deltaTime;
+		// Aggiornamento Nuvole 
+		for (const cloudGO of cloudObjects) {
+			cloudGO.update(deltaTime);
+		}
 
-			// Effetto Pac-Man
-			if (cloudObject.position[0] > CLOUDS.areaX + CLOUDS.wrapMargin) {
-				cloudObject.position[0] = -CLOUDS.areaX - CLOUDS.wrapMargin;
-			} else if (cloudObject.position[0] < -CLOUDS.areaX - CLOUDS.wrapMargin) {
-				cloudObject.position[0] = CLOUDS.areaX + CLOUDS.wrapMargin;
-			}
-
-			cloudObject.modelMatrix = buildModelMatrix(cloud.bounds, {
-				scaleMul: cloudObject.scale,
-				translate: cloudObject.position,
-				rotateY: cloudObject.rotationY
-			});
+		// Aggiornamento Fiori
+		for (const flowerGO of flowerObjects) {
+			flowerGO.update(deltaTime);
 		}
 
 		// Movimento e Fisica
@@ -462,19 +375,14 @@ async function main() {
 		player.update(deltaTime, hud.inputActions, colliders, cameraForward, cameraRight);
 		camera.updatePosition(deltaTime);
 
-		// Calcolo opacità dinamica degli oggetti vicini alla camera
-		const closestHouseX = Math.max(
-			houseCollider.min[0],
-			Math.min(camera.position[0], houseCollider.max[0])
-		);
-		const closestHouseZ = Math.max(
-			houseCollider.min[2],
-			Math.min(camera.position[2], houseCollider.max[2])
-		);
-		const houseDistance = Math.hypot(
-			camera.position[0] - closestHouseX,
-			camera.position[2] - closestHouseZ
-		);
+		// Sincronizzazione GameObject Player
+		playerGO.setPosition(...player.position);
+		playerGO.setRotationY(player.yaw);
+
+		// Opacità Dinamica Casa
+		const closestHouseX = Math.max(houseCollider.min[0], Math.min(camera.position[0], houseCollider.max[0]));
+		const closestHouseZ = Math.max(houseCollider.min[2], Math.min(camera.position[2], houseCollider.max[2]));
+		const houseDistance = Math.hypot(camera.position[0] - closestHouseX, camera.position[2] - closestHouseZ);
 		const houseOpacity = houseDistance < TREES.fadeRadius ? 0.0 : 1.0;
 		for (const houseObject of houseObjects) {
 			houseObject.opacity += (houseOpacity - houseObject.opacity) * 0.1;
@@ -485,22 +393,11 @@ async function main() {
 			const dx = tc[0] - camera.position[0];
 			const dz = tc[2] - camera.position[2];
 			const distToCam = Math.sqrt(dx * dx + dz * dz);
-
 			const targetOpacity = distToCam < TREES.fadeRadius ? 0.0 : 1.0;
 			treeOpacities[i] += (targetOpacity - treeOpacities[i]) * 0.1;
 		}
 
-		// Aggiorna matrici Player
-		playerGO.setModelMatrix(
-			buildModelMatrix(char.bounds, {
-				scaleMul: 0.72,
-				placeOnGround: true,
-				translate: player.position,
-				rotateY: player.yaw
-			})
-		);
-
-		// Luci: direzione e colore
+		// Luci
 		let lightDir;
 		if (state.rotateLight) {
 			lightAngle += deltaTime * 0.65;
@@ -511,19 +408,6 @@ async function main() {
 		dayNightCycleUpdate(deltaTime, state, hud);
 		// Calcolo del colore finale scalato per l'intensità
 		finalLightColor = state.lightColor.map((c) => c * state.lightIntensity);
-
-		// Aggiorna fiori rotanti
-		for (const f of animatedFlowers) {
-			f.currentRotationY += deltaTime * f.rotationSpeed;
-			f.setModelMatrix(
-				buildModelMatrix(flower.bounds, {
-					scaleMul: f.baseScale,
-					placeOnGround: true,
-					translate: f.basePosition,
-					rotateY: f.currentRotationY
-				})
-			);
-		}
 
 		// Rendering
 		renderer.render(camera, objects, skyboxMesh, {
