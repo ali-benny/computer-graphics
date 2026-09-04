@@ -306,7 +306,7 @@
 			</p>
 			<p>Per rendere l'esperienza immersiva, è stata aggiunta una traccia musicale di sottofondo in ciclo continuo.
 				L'audio viene avviato al primo click o tocco dell'utente (rispettando le restrizioni di autoplay dei browser)
-				oppure direttamente tramite il controller audio dell'interfaccia.</p>
+				oppure direttamente tramite il controller audio nell'interfaccia Desktop.</p>
 		</section>
 
 		<section>
@@ -377,7 +377,7 @@
 				</li>
 				<li><strong>Traccia audio:</strong> La traccia audio di sottofondo è tratta dal gioco originale Nintendo,
 					disponibile sul web.</li>
-				<li><strong>Texture:</strong> il prato è stato realizzato con una texture ripetuta di un'immagine trovata online
+				<li><strong>Texture aggiuntive:</strong> il prato è stato realizzato con una texture ripetuta di un'immagine trovata online
 					che replica quello del gioco originale.</li>
 			</ul>
 		</section>
@@ -395,9 +395,9 @@
 				<li><code>objLoader.js</code>: parsing asincrono dei file OBJ e calcolo dei limiti geometrici;</li>
 				<li><code>math.js</code>: libreria matematica personalizzata (vettori, matrici, proiezioni, look-at);</li>
 				<li><code>camera.js</code>: logica della camera in terza persona e gestione della parallasse;</li>
-				<li><code>player.js</code> e <code>mobile-player.js</code>: gestione del movimento, accelerazione, attrito e
+				<li><code>player.js</code>: gestione del movimento, accelerazione, attrito e
 					collisioni;</li>
-				<li><code>mobileControls.js</code> e <code>mobile-camera.js</code>: costruzione ed elaborazione dei controlli
+				<li><code>mobileControls.js</code>, <code>mobile-player.js</code> e <code>mobile-camera.js</code>: costruzione ed elaborazione dei controlli
 					touch;</li>
 				<li><code>gameObject.js</code>: classi orientate agli oggetti (<code>GameObject</code>,
 					<code>CloudObject</code>, <code>FlowerObject</code>);
@@ -439,7 +439,7 @@
 			<div class="formula">
 				$$y' = y - (z - z_0)^2 \cdot k$$
 			</div>
-			<p>dove $k$ rappresenta l'intensità della curvatura (<code>curvatureStrength</code>). La Skybox viene renderizzata
+			<p>dove $k$ rappresenta l'intensità della curvatura (<code>curvatureStrength</code>).<br>La Skybox viene renderizzata
 				con uno shader dedicato che calcola un gradiente sfumato tra orizzonte e zenit.</p>
 
 			<h3 id="sez-6-2">Proiezione, Camera e Trasparenze</h3>
@@ -496,19 +496,10 @@
 
 		<section>
 			<h2 id="sez-9">9. Animazione e tecniche avanzate</h2>
-			<p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati
-				movimento, collisioni, camera, nuvole, fiori, dissolvenza degli alberi e della casa, illuminazione e render.</p>
-			<p>La luce può ruotare attorno alla scena. Inoltre gli alberi e la casa vicini alla camera vengono resi
-				progressivamente trasparenti tramite interpolazione dell'opacità. Per le istanze trasparenti il renderer
-				disabilita temporaneamente il depth write e disegna separatamente le facce anteriori e posteriori. Il fragment
-				shader usa anche un alpha cutout per eliminare le parti vuote della texture delle foglie.</p>
-			<p>Le nuvole si muovono orizzontalmente e vengono riposizionate sul lato opposto quando superano il bordo
-				dell'area di gioco. Una parte dei fiori ruota continuamente attorno all'asse Y, con velocità e direzione
-				variabili.</p>
-			<p>Il pannello <code>dat.GUI</code> permette di selezionare manualmente Alba, Mezzogiorno, Tramonto o Notte,
-				oppure di attivare il ciclo automatico giorno/notte. I preset modificano colore e intensità della luce e i
-				colori del gradiente della skybox; nel ciclo automatico questi valori vengono interpolati gradualmente tra una
-				fase e la successiva. Sono disponibili anche i controlli per il fog e per la rotazione della luce.</p>
+			<p>Il render loop viene eseguito con <code>requestAnimationFrame</code>. Durante ogni frame vengono aggiornati la logica di movimento, le collisioni, la camera, il movimento di nuvole e fiori, la dissolvenza di alberi e abitazione, l'illuminazione e il rendering finale della scena.</p>
+			<p>La sorgente luminosa può ruotare attorno alla scena per mostrare la resa del modello di illuminazione di Phong. Inoltre, gli alberi e la casa vicini alla camera vengono resi progressivamente trasparenti tramite interpolazione dell'opacità: per gestire correttamente queste istanze trasparenti, il renderer disabilita temporaneamente il depth write e disegna separatamente le facce posteriori e anteriori, evitando artefatti di sovrapposizione. Contestualmente, il fragment shader applica un alpha cutout per scartare i frammenti completamente trasparenti della texture del fogliame.</p>
+			<p>Le nuvole traslano orizzontalmente e vengono riposizionate sul lato opposto non appena superano i confini del mini-mondo. Una parte della vegetazione floreale ruota continuamente attorno all'asse Y con velocità e verso variabili.</p>
+			<p>Tramite il pannello <code>dat.GUI</code> è possibile selezionare manualmente i preset di illuminazione e atmosfera (Alba, Mezzogiorno, Tramonto, Notte), oppure attivarne la transizione automatica che interpola gradualmente i colori della skybox, l'intensità e la tonalità della luce tra una fase e la successiva. Sono infine presenti i controlli per la nebbia (near e far) e per la rotazione manuale della luce.</p>
 		</section>
 
 		<section>

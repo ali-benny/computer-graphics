@@ -130,7 +130,7 @@ void main() {
     mat4 viewNoTranslation = uView;
     viewNoTranslation[3] = vec4(0.0, 0.0, 0.0, 1.0);
 
-    // Rendering sullo sfondo col trick Z=W
+    // Rendering sullo sfondo
     vec4 pos = uProjection * viewNoTranslation * vec4(aPosition, 1.0);
     gl_Position = pos.xyww;
 }
@@ -255,14 +255,14 @@ export function setMeshAttributes(gl, program, mesh) {
 	}
 
 	// Disabilita gli attributi di istanza se non sono necessari
-	const instLocs = [
+	const locs = [
         gl.getAttribLocation(program, 'aInstanceModelMatrix0'),
         gl.getAttribLocation(program, 'aInstanceModelMatrix1'),
         gl.getAttribLocation(program, 'aInstanceModelMatrix2'),
         gl.getAttribLocation(program, 'aInstanceModelMatrix3'),
         gl.getAttribLocation(program, 'aInstanceOpacity')
     ];
-    for (const loc of instLocs) {
+    for (const loc of locs) {
         if (loc >= 0) {
             gl.disableVertexAttribArray(loc);
         }
@@ -289,13 +289,14 @@ export function drawMeshInstanced(gl, program, mesh, matrices, opacities, instan
 	gl.bindBuffer(gl.ARRAY_BUFFER, instanceBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, matrices, gl.DYNAMIC_DRAW);
 
-	const loc0 = gl.getAttribLocation(program, 'aInstanceModelMatrix0');
-	const loc1 = gl.getAttribLocation(program, 'aInstanceModelMatrix1');
-	const loc2 = gl.getAttribLocation(program, 'aInstanceModelMatrix2');
-	const loc3 = gl.getAttribLocation(program, 'aInstanceModelMatrix3');
+	const locs = [
+        gl.getAttribLocation(program, 'aInstanceModelMatrix0'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix1'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix2'),
+        gl.getAttribLocation(program, 'aInstanceModelMatrix3'),
+    ];
 
 	const bytesPerMatrix = 16 * 4;
-	const locs = [loc0, loc1, loc2, loc3];
 	locs.forEach((loc, i) => {
 		if (loc >= 0) {
 			gl.enableVertexAttribArray(loc);
